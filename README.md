@@ -1,2 +1,2 @@
 # MLToolbox
-another machine learning toolbox for research purpose
+another machine learning toolbox for research purposes
