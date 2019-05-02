@@ -5,8 +5,6 @@ import numpy as np
 from toolbox.networks.unet import UNet
 from toolbox.classes.trainer import SupervisedTrainer
 
-import PIL
-import imageio
 import matplotlib.pyplot as plt
 import os
 
@@ -136,7 +134,7 @@ def main(args):
     # datasets = get_dataset('mnist', debug_level=1)
     train_ds, val_ds = get_dataset('tetris', debug_level=0)
 
-    net = UNet(num_classes=3, num_filters=4, depth=3)
+    net = UNet(num_classes=3, num_filters=32, depth=4)
     vars = net.trainable_variables  # only available after forward pass !
 
     opt = tf.keras.optimizers.Adam(learning_rate=1.0e-3)
