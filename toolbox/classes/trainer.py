@@ -6,10 +6,14 @@ import tensorflow as tf
 
 class Trainer(ABC):
 
-    def __init__(self, optimizer, callbacks=None):
+    def __init__(self, optimizer, log_path, debug_level, callbacks=None, **kwargs):
         self.optimizer = optimizer
+        self.debug_level = debug_level
         # self.device = device
-        self.log_path = '/var/tmp/' + datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
+        if log_path is not None:
+            self.log_path = log_path
+        else:
+            raise ValueError('log_path is None!')
         self.callbacks = callbacks
 
     @abstractmethod
@@ -26,8 +30,8 @@ class Trainer(ABC):
 
 
 class SupervisedTrainer(Trainer, ABC):
-    def __init__(self, network, optimizer, loss, dataset, device=None):
-        super(SupervisedTrainer, self).__init__(optimizer, device)
+    def __init__(self, network, optimizer, loss, dataset, log_path, debug_level, **kwargs):
+        super(SupervisedTrainer, self).__init__(optimizer, log_path, debug_level)
         self.network = network
 
         if isinstance(dataset, tf.data.Dataset):

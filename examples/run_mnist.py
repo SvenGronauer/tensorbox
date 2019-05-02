@@ -1,9 +1,7 @@
 import tensorflow as tf
 import sys
-import argparse
-from toolbox.datasets import get_dataset
-# from .. import datasets as ds
 
+from toolbox.datasets import get_dataset
 from toolbox.networks.lenet import LeNet
 
 
@@ -38,13 +36,7 @@ class Trainer:
 
 
 def run_mnist(args):
-    # arg_parser = common_arg_parser()
-    # args, unknown_args = arg_parser.parse_known_args(args)
-    # extra_args = parse_cmdline_kwargs(unknown_args)
-    train_ds, val_ds = get_dataset('mnist', debug_level=1)
-    # train_ds, val_ds = ds.get_dataset('mnist', debug_level=1)
-
-    # net = UNet(num_filters=8, num_classes=3)
+    train_ds, val_ds = get_dataset('mnist', debug_level=args.debug)
     net = LeNet()
     opt = tf.keras.optimizers.Adam()
     loss_func = tf.keras.losses.SparseCategoricalCrossentropy()

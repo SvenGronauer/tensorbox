@@ -20,17 +20,17 @@ def accuracy(y_true, y_pred, num_classes):
 
 def log_loss(y_true, y_pred):
     w = [1., 100., 100.]
-    weights = tf.reshape(w, shape=(1, 1, 1, 3))
+    # weights = tf.reshape(w, shape=(1, 1, 1, 3))
     logloss = - y_true * tf.math.log(y_pred) - (1 - y_true) * tf.math.log(1 - y_pred)
-    weighted_loss = logloss * weights
+    # weighted_loss = logloss * weights
     mean = tf.reduce_mean(logloss)
-    w_mean = tf.reduce_mean(weighted_loss)
-    return w_mean
+    # w_mean = tf.reduce_mean(weighted_loss)
+    return mean
 
 
 class UNetTrainer(SupervisedTrainer):
-    def __init__(self, network, optimizer, loss, train_set, val_set):
-        super(UNetTrainer, self).__init__(network, optimizer, loss, train_set)
+    def __init__(self, network, optimizer, loss, train_set, val_set, log_path, debug_level=0, **kwargs):
+        super(UNetTrainer, self).__init__(network, optimizer, loss, train_set, log_path, debug_level, **kwargs)
         self.val_set = val_set
 
         self.loss_metric = tf.keras.metrics.BinaryCrossentropy()
@@ -65,8 +65,10 @@ class UNetTrainer(SupervisedTrainer):
             plt.colorbar()
 
         # plt.show()
-        U.mkdir('./tmp')
-        fig.savefig('tmp/image_at_epoch_{:04d}.png'.format(epoch))
+        U.mkdir(self.log_path)
+        # figure_name_path = self.log_path + '/image_at_epoch_{:04d}.png'.format(epoch)
+        figure_name_path = os.path.join(self.log_path, 'image_at_epoch_{:04d}.png'.format(epoch))
+        fig.savefig(figure_name_path)
 
         """ ground truth """
         fig = plt.figure()
@@ -80,8 +82,9 @@ class UNetTrainer(SupervisedTrainer):
             plt.colorbar()
 
         # plt.show()
-        U.mkdir('./tmp')
-        fig.savefig('tmp/gt_at_epoch_{:04d}.png'.format(epoch))
+        U.mkdir(self.log_path)
+        figure_name_path = os.path.join(self.log_path, 'gt_at_epoch_{:04d}.png'.format(epoch))
+        fig.savefig(figure_name_path)
 
     def train(self, epochs):
         for epoch in range(epochs):
@@ -128,7 +131,7 @@ class UNetTrainer(SupervisedTrainer):
         print('Validation mean: {:0.1f}%'.format(np.mean(mean_acc)*100))
 
 
-if __name__ == '__main__':
+def main(args):
     print(tf.__version__)
     # datasets = get_dataset('mnist', debug_level=1)
     train_ds, val_ds = get_dataset('tetris', debug_level=0)
@@ -142,6 +145,15 @@ if __name__ == '__main__':
 
     loss_func = tf.losses.LogLoss()
 
-    trainer = UNetTrainer(network=net, optimizer=opt, loss=loss_func, train_set=train_ds, val_set=val_ds)
+    trainer = UNetTrainer(network=net,
+                          optimizer=opt,
+                          loss=loss_func,
+                          train_set=train_ds,
+                          val_set=val_ds,
+                          log_path=args.log_path)
     trainer.train(epochs=201)
+
+
+if __name__ == '__main__':
+    main(args=None)
 
