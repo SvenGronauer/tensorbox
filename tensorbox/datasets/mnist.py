@@ -1,5 +1,5 @@
 import tensorflow as tf
-from toolbox.datasets.dataset_utils import convert_rgb_images_to_float
+from tensorbox.datasets.dataset_utils import convert_rgb_images_to_float
 
 
 def create_mnist_dataset(train_val_split=0.8, batch_size=32, apply_preprocessing=True):

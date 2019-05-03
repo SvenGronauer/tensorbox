@@ -1,17 +1,17 @@
 import tensorflow as tf
-from toolbox.datasets import get_dataset
+from tensorbox.datasets import get_dataset
 from tensorflow.python import keras, layers
 import numpy as np
 
-from toolbox.networks.unet import UNet
-from toolbox.classes.trainer import SupervisedTrainer
+from tensorbox.networks.unet import UNet
+from tensorbox.classes.trainer import SupervisedTrainer
 
 import matplotlib.pyplot as plt
 import os
 
-import toolbox.common.utils as U
+import tensorbox.common.utils as U
 import time
-from toolbox.networks.lenet import LeNet
+from tensorbox.networks.lenet import LeNet
 
 
 def create_interferer(filters=16, kernel_size=3, stride=1, pool_size=2):
@@ -54,12 +54,43 @@ def load_discriminator(ckpt_path, net, opt):
     # return new_model
 
 
+def get_log_loss(y_true, y_pred):
+
+    # w = [1., 25., 25.]
+    # weights = tf.reshape(w, shape=(1, 1, 1, 3))
+    # logloss = - y_true * tf.math.log(y_pred) - (1 - y_true) * tf.math.log(1 - y_pred)
+    logloss = - y_true * tf.math.log(y_pred)
+
+    weighted_loss_map = tf.reduce_sum(logloss, axis=-1)
+
+    mean = tf.reduce_mean(weighted_loss_map)
+    # w_mean = tf.reduce_mean(weighted_loss)
+
+    return mean
+
+
+def get_reward_signal(inputs, dicriminator):
+    pass
+
+
 def main(args):
+
+    eta = 0.05
+    dim = 3
+    std_dev = 0.1
+
+    actions = tf.ones((dim, dim))
+    exploration_noise = tf.random.normal(actions.shape, mean=0., stddev=std_dev)
+    noisy_actions = actions + eta * exploration_noise
+    ones = tf.ones((3, 3))
+
     fake = tf.random.normal([2, 28, 28, 1])
 
     interferer = create_interferer()
 
-    disc = LeNet()
+    value_net = LeNet(out_dim=1)
+
+    disc = LeNet(out_dim=10)
     disc_opt = tf.keras.optimizers.Adam()
     load_discriminator('/var/tmp/ga87zej/mnist/2019_05_02__19_06_11/',
                        net=disc,

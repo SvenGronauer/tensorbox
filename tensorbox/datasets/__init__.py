@@ -24,13 +24,13 @@ def get_foo_dataset():
 
 @register_dataset('mnist')
 def get_mnist(train_val_split):
-    from toolbox.datasets.mnist import create_mnist_dataset
+    from tensorbox.datasets.mnist import create_mnist_dataset
     return create_mnist_dataset(train_val_split)
 
 
 @register_dataset('tetris')
 def get_tetris_dataset(train_val_split):
-    from toolbox.datasets.segmentation_tetris import create_tetris_dataset
+    from tensorbox.datasets.segmentation_tetris import create_tetris_dataset
     return create_tetris_dataset(train_val_split)
 
 

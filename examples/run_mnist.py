@@ -2,11 +2,11 @@ import tensorflow as tf
 from tensorflow.python import keras
 import os
 
-from toolbox.datasets import get_dataset
-from toolbox.networks.lenet import LeNet, get_sequential_lenet
-from toolbox.classes.trainer import SupervisedTrainer
+from tensorbox.datasets import get_dataset
+from tensorbox.networks.lenet import LeNet, get_sequential_lenet
+from tensorbox.classes.trainer import SupervisedTrainer
 
-import toolbox.common.utils as U
+import tensorbox.common.utils as U
 
 
 class MnistTrainer(SupervisedTrainer):

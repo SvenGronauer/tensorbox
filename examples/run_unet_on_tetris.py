@@ -1,15 +1,15 @@
 import tensorflow as tf
 from tensorflow.python import keras, layers
-from toolbox.datasets import get_dataset
+from tensorbox.datasets import get_dataset
 import numpy as np
 
-from toolbox.networks.unet import UNet
-from toolbox.classes.trainer import SupervisedTrainer
+from tensorbox.networks.unet import UNet
+from tensorbox.classes.trainer import SupervisedTrainer
 
 import matplotlib.pyplot as plt
 import os
 
-import toolbox.common.utils as U
+import tensorbox.common.utils as U
 import time
 
 

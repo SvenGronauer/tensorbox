@@ -1,5 +1,5 @@
 import tensorflow as tf
-from toolbox.networks.unet import UNet
+from tensorbox.networks.unet import UNet
 import unittest
 
 

@@ -1,5 +1,5 @@
 import tensorflow as tf
-from toolbox.datasets.segmentation_tetris import create_tetris_dataset
+from tensorbox.datasets.segmentation_tetris import create_tetris_dataset
 import unittest
 
 
