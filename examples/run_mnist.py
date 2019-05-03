@@ -31,7 +31,7 @@ class MnistTrainer(SupervisedTrainer):
         else:
             print("Initializing from scratch.")
 
-    # @tf.function
+    @tf.function
     def train_step(self, batch):
         image, label = batch
         with tf.GradientTape() as tape:
@@ -84,7 +84,6 @@ def run_mnist(args):
                            val_set=val_ds,
                            log_path=args.log_path)
     trainer.train(epochs=2)
-
     trainer.save()
 
 

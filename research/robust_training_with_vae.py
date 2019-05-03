@@ -13,6 +13,7 @@ import toolbox.common.utils as U
 import time
 from toolbox.networks.lenet import LeNet
 
+
 def create_interferer(filters=16, kernel_size=3, stride=1, pool_size=2):
 
     model = keras.Sequential()
