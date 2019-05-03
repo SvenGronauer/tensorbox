@@ -3,7 +3,7 @@ from tensorflow.python import layers, keras
 
 
 class LeNet(keras.Model):
-    def __init__(self, filters=32, kernel_size=3, pool_size=2):
+    def __init__(self, out_dim, filters=32, kernel_size=3, pool_size=2):
         super(LeNet, self).__init__()
         self.conv_1_1 = layers.Conv2D(filters, kernel_size, activation='relu')
         self.conv_1_2 = layers.Conv2D(filters, kernel_size, activation='relu')
@@ -15,9 +15,9 @@ class LeNet(keras.Model):
         self.flatten = layers.Flatten()
         self.d1 = layers.Dense(256, activation='relu')
         # self.dropout = layers.Dropout(0.5)
-        self.d2 = layers.Dense(10, activation='softmax')
+        self.d2 = layers.Dense(out_dim, activation='softmax')
 
-    def call(self, x):
+    def call(self, x, training=None, mask=None):
         x = self.conv_1_1(x)
         x = self.conv_1_2(x)
         x = self.max_pool(x)

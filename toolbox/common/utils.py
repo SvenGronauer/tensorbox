@@ -2,9 +2,13 @@ import os
 import numpy as np
 import argparse
 import datetime
+import sys
 
 
 def get_default_args(func_name='testing', debug_level=0):
+    if sys.version_info[0] < 3:
+        raise Exception("Must be using Python 3")
+
     parser = argparse.ArgumentParser(description='Test MNIST')
     parser.add_argument('--debug', default=debug_level, type=int,
                         help='Debug level (0=None, 1=Low debug prints 2=all debug prints).')

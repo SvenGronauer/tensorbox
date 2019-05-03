@@ -12,9 +12,14 @@ class Trainer(ABC):
         # self.device = device
         if log_path is not None:
             self.log_path = log_path
+            print('Logging into:', self.log_path)
         else:
             raise ValueError('log_path is None!')
         self.callbacks = callbacks
+
+        # TODO add checkpoint manager
+        self.manager = None
+        self.ckpt = None
 
     @abstractmethod
     def predict(self, input):

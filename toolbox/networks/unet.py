@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.python import layers  # Fix for TF2.0a and PyCharm
+from tensorflow.python import layers, keras  # Fix for TF2.0a and PyCharm
 
 
 class DoubleConvolution(layers.Layer):
@@ -53,7 +53,7 @@ class UpConvolution(layers.Layer):
         return x
 
 
-class UNet(tf.keras.Model):
+class UNet(keras.Model):
     """ Implementation of U-Net
         authors: Ronneberger - U-Net CNNs for Biomedical Image Segmentation - 2015
         https://arxiv.org/pdf/1505.04597.pdf
@@ -64,7 +64,7 @@ class UNet(tf.keras.Model):
         self.depth = depth
         self.num_classes = num_classes
 
-        self.final_convolution = layers.Conv2D(filters=num_classes, kernel_size=1, activation='sigmoid')
+        self.final_convolution = layers.Conv2D(num_classes, kernel_size=3, activation='softmax', padding='same')
         self.bottom_convolution = DownConvolution(output_filters=num_filters * 2**depth, pooling=False)
 
         # encoder path
@@ -79,7 +79,7 @@ class UNet(tf.keras.Model):
             outs = num_filters * 2**i
             self.up_convolutions.append(UpConvolution(output_filters=outs))
 
-    def call(self, x):
+    def call(self, x, **kwargs):
         encoder_outs = []
 
         # encoder pathway, save outputs for merging

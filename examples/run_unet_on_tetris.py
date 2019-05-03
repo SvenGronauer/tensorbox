@@ -1,4 +1,5 @@
 import tensorflow as tf
+from tensorflow.python import keras, layers
 from toolbox.datasets import get_dataset
 import numpy as np
 
@@ -17,11 +18,15 @@ def accuracy(y_true, y_pred, num_classes):
 
 
 def log_loss(y_true, y_pred):
-    w = [1., 100., 100.]
-    # weights = tf.reshape(w, shape=(1, 1, 1, 3))
-    logloss = - y_true * tf.math.log(y_pred) - (1 - y_true) * tf.math.log(1 - y_pred)
+    w = [1., 25., 50.]
+    weights = tf.reshape(w, shape=(1, 1, 1, 3))
+    # logloss = - y_true * tf.math.log(y_pred) - (1 - y_true) * tf.math.log(1 - y_pred)
+    logloss = - y_true * tf.math.log(y_pred) * weights
+
+    weighted_loss_map = tf.reduce_sum(logloss, axis=3)
+
     # weighted_loss = logloss * weights
-    mean = tf.reduce_mean(logloss)
+    mean = tf.reduce_mean(weighted_loss_map)
     # w_mean = tf.reduce_mean(weighted_loss)
     return mean
 
@@ -31,7 +36,9 @@ class UNetTrainer(SupervisedTrainer):
         super(UNetTrainer, self).__init__(network, optimizer, loss, train_set, log_path, debug_level, **kwargs)
         self.val_set = val_set
 
-        self.loss_metric = tf.keras.metrics.BinaryCrossentropy()
+        # self.loss_metric = keras.metrics.BinaryCrossentropy()
+        self.loss_metric = keras.metrics.CategoricalCrossentropy()
+        # self.acc = tf.metrics.BinaryAccuracy()
         self.acc = tf.metrics.BinaryAccuracy()
 
         self.callbacks = []
@@ -87,7 +94,7 @@ class UNetTrainer(SupervisedTrainer):
     def train(self, epochs):
         for epoch in range(epochs):
             ts = time.time()
-            if epoch % 25 == 0:
+            if epoch % 20 == 0:
                 self.callback_save_prediction(epoch)
             for n, batch in enumerate(self.dataset):
                 self.train_step(batch)
@@ -111,7 +118,6 @@ class UNetTrainer(SupervisedTrainer):
         # self.loss_metric.update_state(labels, predictions)
         # self.acc.update_state(labels, predictions)
 
-
     def save(self):
         pass
 
@@ -134,7 +140,7 @@ def main(args):
     # datasets = get_dataset('mnist', debug_level=1)
     train_ds, val_ds = get_dataset('tetris', debug_level=0)
 
-    net = UNet(num_classes=3, num_filters=32, depth=4)
+    net = UNet(num_classes=3, num_filters=8, depth=3)
     vars = net.trainable_variables  # only available after forward pass !
 
     opt = tf.keras.optimizers.Adam(learning_rate=1.0e-3)

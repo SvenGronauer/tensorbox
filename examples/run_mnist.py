@@ -35,7 +35,7 @@ class MnistTrainer(SupervisedTrainer):
     def train_step(self, batch):
         image, label = batch
         with tf.GradientTape() as tape:
-            predictions = self.network(image)
+            predictions = self.network(image, training=True)
             loss = self.loss(label, predictions)
         gradients = tape.gradient(loss, self.network.trainable_variables)
 
@@ -72,7 +72,7 @@ class MnistTrainer(SupervisedTrainer):
 
 def run_mnist(args):
     train_ds, val_ds = get_dataset('mnist')
-    net = get_sequential_lenet()
+    net = LeNet(out_dim=10)
     opt = tf.keras.optimizers.Adam()  # must be tf.keras.optimizers.Adam() not keras.optimizers.Adam()  !!!
     loss_func = keras.losses.SparseCategoricalCrossentropy()
 
