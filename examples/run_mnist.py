@@ -1,10 +1,9 @@
 import tensorflow as tf
 from tensorflow.python import keras
-import os
 
 from tensorbox.datasets import get_dataset
-from tensorbox.networks.lenet import LeNet, get_sequential_lenet
-from tensorbox.classes.trainer import SupervisedTrainer
+from tensorbox.networks.lenet import LeNet
+from tensorbox.common.trainer import SupervisedTrainer
 
 import tensorbox.common.utils as U
 
@@ -64,7 +63,6 @@ class MnistTrainer(SupervisedTrainer):
         self.ckpt.step.assign_add(1)
         save_path = self.manager.save()
         print("Saved checkpoint for step {}: {}".format(int(self.ckpt.step), save_path))
-
 
     def predict(self, x):
         return self.network(x)

@@ -1,10 +1,10 @@
 import tensorflow as tf
-from tensorflow.python import keras, layers
+from tensorflow.python import keras
 from tensorbox.datasets import get_dataset
 import numpy as np
 
 from tensorbox.networks.unet import UNet
-from tensorbox.classes.trainer import SupervisedTrainer
+from tensorbox.common.trainer import SupervisedTrainer
 
 import matplotlib.pyplot as plt
 import os

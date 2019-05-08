@@ -1,2 +1,2 @@
-# MLToolbox
-another machine learning toolbox for research purposes
+# TensorBox
+my personal machine learning toolbox for research purposes
