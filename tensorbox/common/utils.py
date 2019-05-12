@@ -26,8 +26,7 @@ def get_default_args(func_name='testing', debug_level=0):
 def normalize(xs,
               axis=None,
               eps=1e-8):
-    """
-    Normalize array along axis
+    """ Normalize array along axis
     :param xs: np.array(), array to normalize
     :param axis: int, axis along which is normalized
     :param eps: float, offset to avoid division by zero
@@ -36,11 +35,10 @@ def normalize(xs,
     return (xs - xs.mean(axis=axis)) / (xs.std(axis=axis) + eps)
 
 
-def make_env(env_name='CartPole-v0',
-             seed=None):
-    """
-    Creates a Gym Environment
+def make_env(env_name='CartPole-v0', seed=None):
+    """ Creates a Gym Environment
     :param env_name: str, name of environment
+    :param seed: int, base for random number generator
     :return:
     """
     # todo list all gym environments
@@ -55,8 +53,7 @@ def make_env(env_name='CartPole-v0',
 
 
 def mkdir(path):
-    """
-    create directory at given path
+    """ create directory at given path
     :param path: str, path
     :return:
     """
@@ -69,8 +66,7 @@ def mkdir(path):
 
 
 def safe_mean(xs):
-    """
-    Calculate mean value of an array safely and avoid division errors
+    """ Calculate mean value of an array safely and avoid division errors
     :param xs: np.array, array to calculate mean
     :return: np.float, mean value of xs
     """

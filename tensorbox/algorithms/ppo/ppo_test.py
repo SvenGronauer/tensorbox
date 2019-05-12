@@ -1,4 +1,5 @@
 import unittest
+import tensorflow as tf
 from tensorflow.python import keras
 from tensorbox.algorithms.ppo.trainer import PPOTrainer
 from tensorbox.networks.shared_mlp import SharedMLPNet
@@ -46,9 +47,35 @@ class TestPPO(unittest.TestCase):
         traj = trainer.get_trajectories()
         print(traj.actions.shape)
         ds = trainer.get_dataset(traj)
-        for n_batch, batch in enumerate(ds):
-            obs, acs, adv, tret, = batch
-            print('Batch n=', n_batch)
+        self.assertTrue(isinstance(ds, tf.data.Dataset))
+        # trainer.build_ppo_loss(ds)
+        # for n_batch, batch in enumerate(ds):
+        #     obs, acs, adv, tret = batch
+        #     print('Batch n=', n_batch)
+
+    # def test_ppo_loss(self):
+    #     env_name = 'CartPole-v0'
+    #     num_envs = 2
+    #     # env = utils.make_env(env_name)
+    #     env = VecEnv(env_name, num_envs=num_envs)
+    #     horizon = 64
+    #     # net = MLPNet(out_dim=5)
+    #     net = SharedMLPNet(out_dims=(env.action_space.n, 1))
+    #     opt = keras.optimizers.Adam()
+    #     trainer = PPOTrainer(net=net,
+    #                          opt=opt,
+    #                          env=env,
+    #                          log_path='/var/tmp/delete_me')
+    #
+    #     traj = trainer.get_trajectories()
+    #     print(traj.actions.shape)
+    #     ds = trainer.get_dataset(traj)
+    #     print(ds)
+    #     trainer.build_ppo_loss(ds)
+    #     # for n_batch, batch in enumerate(ds):
+    #     #     obs, acs, adv, tret, = batch
+    #     #     print('Batch n=', n_batch)
+
 
 if __name__ == '__main__':
     unittest.main()

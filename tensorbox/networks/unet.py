@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.python import layers, keras  # Fix for TF2.0a and PyCharm
+from tensorbox.networks import BaseNetwork
 
 
 class DoubleConvolution(layers.Layer):
@@ -53,7 +54,7 @@ class UpConvolution(layers.Layer):
         return x
 
 
-class UNet(keras.Model):
+class UNet(keras.Model, BaseNetwork):
     """ Implementation of U-Net
         authors: Ronneberger - U-Net CNNs for Biomedical Image Segmentation - 2015
         https://arxiv.org/pdf/1505.04597.pdf

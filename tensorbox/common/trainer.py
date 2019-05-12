@@ -1,9 +1,11 @@
 import datetime
 from abc import ABC, abstractmethod
-import os
+import gym
 import tensorflow as tf
 
 import tensorbox.common.utils as utils
+from tensorbox.common.probability_distributions import GaussianDistribution, \
+    CategoricalDistribution
 
 
 class Trainer(ABC):
@@ -26,9 +28,12 @@ class Trainer(ABC):
             raise ValueError('log_path is None!')
         self.callbacks = callbacks
 
-        # TODO add checkpoint manager
-        self.manager = None
-        self.checkpoint = None
+        self.checkpoint = tf.train.Checkpoint(step=tf.Variable(1),
+                                              optimizer=opt,
+                                              net=net)
+        self.manager = tf.train.CheckpointManager(self.checkpoint,
+                                                  self.log_path,
+                                                  max_to_keep=5)
 
     def predict(self, x):
         """
@@ -45,13 +50,9 @@ class Trainer(ABC):
         :return: bool, true if restore is successful
         """
         restore_successful = False
-        checkpoint = tf.train.Checkpoint(step=tf.Variable(1), 
-                                         optimizer=self.opt,
-                                         net=self.net)
-        manager = tf.train.CheckpointManager(checkpoint, path, max_to_keep=3)
-        checkpoint.restore(manager.latest_checkpoint)
-        if manager.latest_checkpoint:
-            print("Restored from {}".format(manager.latest_checkpoint))
+        self.checkpoint.restore(self.manager.latest_checkpoint)
+        if self.manager.latest_checkpoint:
+            print("Restored from {}".format(self.manager.latest_checkpoint))
             restore_successful = True
         else:
             print("Initializing from scratch.")
@@ -71,11 +72,9 @@ class Trainer(ABC):
 class SupervisedTrainer(Trainer, ABC):
     def __init__(self, net, opt, loss_func, dataset, log_path, debug_level, **kwargs):
         super(SupervisedTrainer, self).__init__(net, opt, log_path, debug_level, **kwargs)
+        assert isinstance(dataset, tf.data.Dataset), "Wrong format for dataset."
 
-        if isinstance(dataset, tf.data.Dataset):
-            self.dataset = dataset
-        else:
-            raise TypeError("Wrong format for dataset.")
+        self.dataset = dataset
         self.loss_func = loss_func
 
 

@@ -1,6 +1,17 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import tensorflow as tf
+import gym
+
+
+def get_probability_distribution(space):
+    assert isinstance(space, gym.spaces.Space)
+    if isinstance(space, gym.spaces.Discrete):
+        return CategoricalDistribution(num_classes=space.n)
+    elif isinstance(space, gym.spaces.Box):
+        raise NotImplementedError
+    else:
+        raise NotImplementedError
 
 
 class ProbabilityDistribution(ABC):
@@ -8,15 +19,19 @@ class ProbabilityDistribution(ABC):
         pass
 
     @abstractmethod
-    def entropy(self):
+    def entropy(self, p, from_logits=False):
         pass
 
     @abstractmethod
-    def neg_log_prob(self):
+    def neg_log(self, x):
         pass
 
     @abstractmethod
     def sample(self, x):
+        pass
+
+    @abstractmethod
+    def sparse_neg_log(self, idx, p):
         pass
 
 
@@ -25,16 +40,14 @@ class GaussianDistribution(ProbabilityDistribution):
         super(GaussianDistribution, self).__init__()
 
     @abstractmethod
-    def entropy(self):
-        pass
+    def entropy(self, p, from_logits=False):
+        raise NotImplementedError
 
-    @abstractmethod
-    def neg_log_prob(self):
-        pass
+    def neg_log(self, x):
+        raise NotImplementedError
 
-    @abstractmethod
     def sample(self, x):
-        pass
+        raise NotImplementedError
 
 
 class CategoricalDistribution(ProbabilityDistribution):
@@ -42,19 +55,20 @@ class CategoricalDistribution(ProbabilityDistribution):
         super(CategoricalDistribution, self).__init__()
         self.num_classes = num_classes
 
-    def entropy(self, x):
+    def __call__(self, *args, **kwargs):
+        return self.sample(*args, **kwargs)
+
+    def entropy(self, p, from_logits=False):
+        if from_logits:
+            p = tf.nn.softmax(p, axis=-1)
+        return -1. * tf.reduce_sum(p * tf.math.log(p), axis=-1)
+
+    def neg_log(self, x):
         return x
 
-    def neg_log_prob(self, x):
-        return x
+    def sample(self, p_as_logits, **kwargs):
+        return tf.random.categorical(p_as_logits, 1)
 
-    def sample(self, p, use_logits=False):
-        # todo utilize tf.distributions
-        # a = tf.distributions.multinomail
-        if use_logits:
-            p = tf.math.softmax(p, axis=-1)
-        actions = np.zeros(p.shape[0])
-        for i in range(p.shape[0]):
-            probs = p[i]
-            actions[i] = np.random.choice(self.num_classes, p=p[i])
-        return actions
+    def sparse_neg_log(self, idx, p, from_logits=False):
+        return tf.losses.sparse_categorical_crossentropy(idx, p, from_logits, axis=-1)
+

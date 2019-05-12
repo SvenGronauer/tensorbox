@@ -1,10 +1,12 @@
+import tensorflow as tf
 from tensorflow.python import layers, keras
+from tensorbox.networks import BaseNetwork
 
 
-class MLPNet(keras.Model):
-    def __init__(self, out_dim, units=(64, 64), activation='relu'):
+class MLPNet(keras.Model, BaseNetwork):
+    def __init__(self, in_dim, out_dim, units=(64, 64), activation=tf.nn.relu):
         super(MLPNet, self).__init__()
-        #  self.in_dim = in_dim  # todo define input dim!
+        self.in_dim = in_dim
         self.out_dim = out_dim
 
         hidden_units = list(units) + [out_dim]
@@ -15,7 +17,24 @@ class MLPNet(keras.Model):
                                  name='dense_{}'.format(n))
             self.dense_layers.append(layer)
 
+        self.init_weights_biases()
+
     def call(self, x, training=None, mask=None):
         for layer in self.dense_layers:
             x = layer(x)
         return x
+
+    def clone_net(self):
+        """ creates a clone of the network model, but with different init values"""
+        return MLPNet(self.in_dim,
+                      self.out_dims,
+                      units=self.units,
+                      activation=self.activation)
+
+    def get_config(self):
+        raise NotImplementedError
+
+    def init_weights_biases(self):
+        """ perform forward-pass to create weights and biases"""
+        fake_pass_shape = (1,) + self.in_dim
+        self(tf.zeros(fake_pass_shape))
