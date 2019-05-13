@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow.python import keras
 import numpy as np
+import time
 
 import tensorbox.common.utils as utils
 from tensorbox.common.trainer import ReinforcementTrainer
@@ -202,6 +203,7 @@ class PPOTrainer(ReinforcementTrainer):
     def train(self, epochs):
         print('Start training for {} epochs'.format(epochs))
         for epoch in range(epochs):
+            ts = time.time()
             self.clip_value = self.start_clip_value * (1.0 - epoch/epochs)
             value_losses = []
             if epoch % self.K == 0:
@@ -213,8 +215,9 @@ class PPOTrainer(ReinforcementTrainer):
                 value_losses.append(self.value_loss_metric.result())
             # print('Value loss=', utils.safe_mean(value_losses))
             # self.evaluate()
-            print('Episode {} \t episode return: {:0.3f}'.format(epoch,
-                                                            self.latest_trajectory.mean_episode_return))
+            print('Episode {} \t episode return: {:0.3f} \t took: {:0.2f}s'.format(epoch,
+                self.latest_trajectory.mean_episode_return,
+                time.time() - ts))
             self.logging(epoch)
 
     @tf.function

@@ -4,9 +4,6 @@ import argparse
 import datetime
 import sys
 import tensorflow as tf
-import gym
-import roboschool
-from gym import envs
 
 
 def get_default_args(func_name='testing', debug_level=0):
@@ -52,6 +49,10 @@ def make_env(env_name, seed=None):
     :param seed: int, make experiments deterministic
     :return:
     """
+    import gym
+    import roboschool
+    from gym import envs
+
     if seed:
         tf.random.set_seed(seed)
         np.random.seed(seed=seed)

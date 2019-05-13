@@ -20,7 +20,7 @@ def evaluate(args):
                          opt=opt,
                          env=env,
                          log_path='/var/tmp/delete_me')
-    trainer.restore('/var/tmp/delete_me')
+    trainer.restore()
 
     done = False
     obs = env.reset()
@@ -46,13 +46,13 @@ def run(args):
     out_dims = env.get_action_shape() + (1, )  # create tuple for shared network
     net = SharedMLPNet(in_dim=in_dim,
                        out_dims=out_dims,
-                       activation=tf.nn.relu)
+                       activation=tf.nn.tanh)
 
     trainer = PPOTrainer(net=net,
                          opt=opt,
                          env=env,
                          log_path='/var/tmp/delete_me')
-    trainer.restore('/var/tmp/delete_me')
+    trainer.restore()
     trainer.train(epochs=100)
     trainer.save()
 

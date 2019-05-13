@@ -9,7 +9,7 @@ def get_probability_distribution(space):
     if isinstance(space, gym.spaces.Discrete):
         return CategoricalDistribution(num_classes=space.n)
     elif isinstance(space, gym.spaces.Box):
-        return GaussianDistribution(shape=space.shape, std=0.5)
+        return GaussianDistribution(shape=space.shape, std=0.2)
     else:
         raise NotImplementedError
 
@@ -43,12 +43,8 @@ class GaussianDistribution(ProbabilityDistribution):
         print('GaussianDistribution.shape =', shape)
 
     def entropy(self, p, from_logits=False):
-        # tf.reduce_sum(self.std + .5 * np.log(2.0 * np.pi * np.e), axis=-1)
         ln = tf.math.log
-
         entropy = 0.5 * self.dim * (ln(2*np.pi*self.std**2) + 1)
-        # det_E = self.std**self.dim
-        # entropy = 0.5 * (ln(det_E) + self.dim * (1.0 + ln(2*np.pi)))
         return entropy
 
     def get_action(self, p):
