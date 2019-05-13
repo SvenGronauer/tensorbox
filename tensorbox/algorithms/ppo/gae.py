@@ -15,7 +15,7 @@ def calculate_gae_advantages(trajectory, gamma=.99, kappa=0.95):
     dones = trajectory.dones
     rewards = trajectory.rewards
     values_t_plus_1 = trajectory.values  # np.array, holding values of V(s_t) for t=0,..., T
-    horizon, num_envs = trajectory.actions.shape
+    horizon, num_envs = trajectory.dones.shape
     advantages = np.zeros([horizon, num_envs], dtype=np.float32)
     last_delta = 0.0
 
@@ -41,7 +41,7 @@ def calculate_target_returns(trajectory, gamma):
 
     R_t = (1. - dones[-1]) * trajectory.values[-1] + dones[-1]
 
-    horizon, num_envs = trajectory.actions.shape
+    horizon, num_envs = trajectory.dones.shape
     target_returns = np.zeros((horizon, num_envs), dtype=np.float32)
 
     for t in reversed(range(horizon)):

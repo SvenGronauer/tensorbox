@@ -3,7 +3,7 @@ import multiprocessing as mp
 import tensorbox.common.utils as utils
 import time
 from abc import ABC, abstractmethod
-
+import gym
 
 def worker(worker_remote, parent_remote, env_name, config):
     """
@@ -82,8 +82,9 @@ class VecEnv(object):
         else:   # determine spaces from environment
             self.remotes[0].send(('get_spaces', None))
             self.observation_space, self.action_space = self.remotes[0].recv()
-        print('observation_space {} of type {}'.format(self.observation_space.shape, self.observation_space))
-        print('action_space n={} of type {}'.format(self.action_space.n, self.action_space))
+        print('Use gym environment:', env_name)
+        print('observation_space of type {}'.format(self.observation_space))
+        print('action_space of type {}'.format(self.action_space))
         self.viewer = None
         self.num_envs = num_envs
 
@@ -99,6 +100,12 @@ class VecEnv(object):
             print(mp.active_children())
         self.closed = True
         print('Server closed')
+
+    def get_action_shape(self):
+        if isinstance(self.action_space, gym.spaces.Box):
+            return self.action_space.shape
+        elif isinstance(self.action_space, gym.spaces.Discrete):
+            return (self.action_space.n, )  # return as tuple
 
     def get_viewer(self):
         if self.viewer is None:

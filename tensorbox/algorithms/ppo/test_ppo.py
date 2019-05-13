@@ -16,7 +16,8 @@ class TestPPO(unittest.TestCase):
         env = VecEnv(env_name, num_envs=num_envs)
         horizon = 64
         # net = MLPNet(out_dim=5)
-        net = SharedMLPNet(out_dims=(env.action_space.n, 1))
+        in_dim = env.observation_space.shape
+        net = SharedMLPNet(in_dim, out_dims=(env.action_space.n, 1))
         opt = keras.optimizers.Adam()
         trainer = PPOTrainer(net=net,
                              opt=opt,
@@ -25,8 +26,6 @@ class TestPPO(unittest.TestCase):
                              log_path='/var/tmp/delete_me')
         traj = trainer.get_trajectories()
 
-        # adv = trainer.get_dataset(traj)
-        # print('adv.shape=', adv.shape)
         self.assertTrue(traj.actions.shape == (horizon, num_envs),
                         'Output shape does not match input shape.')
 
@@ -37,8 +36,9 @@ class TestPPO(unittest.TestCase):
         env = VecEnv(env_name, num_envs=num_envs)
         horizon = 64
         # net = MLPNet(out_dim=5)
-        net = SharedMLPNet(out_dims=(env.action_space.n, 1))
-        opt = keras.optimizers.Adam()
+        in_dim = env.observation_space.shape
+        net = SharedMLPNet(in_dim, out_dims=(env.action_space.n, 1))
+        opt = tf.keras.optimizers.Adam()
         trainer = PPOTrainer(net=net,
                              opt=opt,
                              env=env,

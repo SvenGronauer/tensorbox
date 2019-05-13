@@ -6,7 +6,7 @@ import tensorbox.common.utils as utils
 from tensorbox.common.trainer import ReinforcementTrainer
 from tensorbox.algorithms.ppo.gae import calculate_target_returns, \
     calculate_gae_advantages
-from tensorbox.common.probability_distributions import get_probability_distribution
+from tensorbox.common.probability_distributions import get_probability_distribution, GaussianDistribution
 from tensorbox.common.classes import Trajectory
 
 
@@ -21,7 +21,7 @@ class PPOTrainer(ReinforcementTrainer):
         self.behavior_net = net.clone_net()  # clones the network model, but weight values differ
         self.horizon = horizon
         self.batch_size = 32
-        self.dataset_buffer_size = 64
+        self.dataset_buffer_size = self.batch_size * 8
 
         """ ppo parameters """
         self.K = 1
@@ -30,6 +30,8 @@ class PPOTrainer(ReinforcementTrainer):
         self.start_clip_value = 0.2
 
         self.policy_distribution = get_probability_distribution(env.action_space)
+        # self.action_shape = env.get_action_shape()
+        self.action_shape = env.action_space.shape
         self.summary_writer = tf.summary.create_file_writer(self.log_path)
 
         self.latest_trajectory = None
@@ -58,8 +60,8 @@ class PPOTrainer(ReinforcementTrainer):
         b_logits = tf.cast(b_logits, tf.float32)
         values = tf.cast(values, tf.float32)
 
-        neg_log_pi = self.policy_distribution.sparse_neg_log(actions, pi_logits, from_logits=True)
-        neg_log_b = self.policy_distribution.sparse_neg_log(actions, b_logits, from_logits=True)
+        neg_log_pi = self.policy_distribution.neg_log(actions, pi_logits)
+        neg_log_b = self.policy_distribution.neg_log(actions, b_logits)
 
         # new_policy / old_policy = exp(log_new - log_old) = exp(neg_log_old - neg_log_new)
         ratio = tf.exp(tf.stop_gradient(neg_log_b) - neg_log_pi)
@@ -106,7 +108,11 @@ class PPOTrainer(ReinforcementTrainer):
         """ run behavior-policy roll-outs to obtain trajectories"""
         obs = self.env.reset()
         num_env = obs.shape[0] if len(obs.shape) >= 2 else 1
-        actions = np.zeros(shape=(self.horizon, num_env), dtype=np.int32)
+        if isinstance(self.policy_distribution, GaussianDistribution):
+            a_shape = (self.horizon, num_env) + self.env.get_action_shape()
+            actions = np.zeros(shape=a_shape, dtype=dtype)
+        else:  # make discrete actions
+            actions = np.zeros(shape=(self.horizon, num_env), dtype=np.int32)  # todo adjust actions
         obs_shape = tuple([self.horizon+1, num_env] + list(self.env.observation_space.shape))
         obs_t_plus_1 = np.zeros(shape=obs_shape, dtype=dtype)
         rewards = np.zeros(shape=(self.horizon, num_env), dtype=dtype)
@@ -137,9 +143,6 @@ class PPOTrainer(ReinforcementTrainer):
             count += tf.reduce_sum(ds)
             episode_return *= (1. - ds)
 
-        # perform bootstrap
-        # if len(obs.shape) == 1:
-        #     obs = obs.reshape((-1, obs.shape[0]))
         _, bootstrap_values = self.behavior_net(obs)
         obs_t_plus_1[self.horizon] = obs
         values_t_plus_1[self.horizon] = np.squeeze(bootstrap_values)
@@ -165,11 +168,16 @@ class PPOTrainer(ReinforcementTrainer):
         advantages = utils.normalize(adv)  # Normalize the advantages
         obs = trajectory.observations[:-1]  # remove t_plus_1 state to match shapes
         values = trajectory.values[:-1]
+
         # Reshape and flatten stacked interactions
-        new_shape = tuple([-1] + list(obs.shape[2:]))
-        obs = obs.reshape(new_shape)  # shape into [self.horizon * N, obs.shape]
+        if isinstance(self.policy_distribution, GaussianDistribution):
+            new_actions_shape = tuple([-1] + list(trajectory.actions.shape[2:]))
+            actions = trajectory.actions.reshape(new_actions_shape)
+        else:
+            actions = trajectory.actions.flatten()
+        obs = obs.reshape(tuple([-1] + list(obs.shape[2:])))  # shape into (horizon * N, obs.shape)
         ds = tf.data.Dataset.from_tensor_slices((obs,
-                                                trajectory.actions.flatten(),
+                                                actions,
                                                 advantages.flatten(),
                                                 values.flatten(),
                                                 target_returns.flatten()))
@@ -178,7 +186,6 @@ class PPOTrainer(ReinforcementTrainer):
     def logging(self, step):
         # t = self.opt.step  # todo make me opt step
         t = step
-        # print('t= ', t)
         with self.summary_writer.as_default():
             # t = self.opt.iterations
             tf.summary.scalar('clip value', self.clip_value, step=t)
@@ -204,13 +211,14 @@ class PPOTrainer(ReinforcementTrainer):
             for n_batch, batch in enumerate(ds):
                 self.train_step(batch, self.clip_value)
                 value_losses.append(self.value_loss_metric.result())
-            print('Value loss=', utils.safe_mean(value_losses))
+            # print('Value loss=', utils.safe_mean(value_losses))
             # self.evaluate()
-            print('Training - mean episode return:', self.latest_trajectory.mean_episode_return)
+            print('Episode {} \t episode return: {:0.3f}'.format(epoch,
+                                                            self.latest_trajectory.mean_episode_return))
             self.logging(epoch)
 
     @tf.function
-    def train_step(self, batch, clip_value):
+    def train_step(self, batch, clip_value, **kwargs):
         with tf.GradientTape() as tape:
             loss = self.build_ppo_loss(batch, clip_value=clip_value)
         gradients = tape.gradient(loss, self.net.trainable_variables)

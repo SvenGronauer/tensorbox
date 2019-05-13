@@ -9,11 +9,12 @@ from tensorbox.common.probability_distributions import get_probability_distribut
 
 
 def evaluate(args):
-    env = utils.make_env()
+    env = utils.make_env(args.env)
     opt = tf.keras.optimizers.Adam()
 
     in_dim = env.observation_space.shape
-    net = SharedMLPNet(in_dim=in_dim, out_dims=(env.action_space.n, 1))
+    out_dims = env.action_space.shape + (1,)  # create tuple for shared network
+    net = SharedMLPNet(in_dim=in_dim, out_dims=out_dims)
 
     trainer = PPOTrainer(net=net,
                          opt=opt,
@@ -25,40 +26,41 @@ def evaluate(args):
     obs = env.reset()
     ret = 0
     policy = get_probability_distribution(env.action_space)
+    step = 0
     while not done:
-        # env.render()
-        obs = obs.reshape((-1, 4))
-        ac_logits, val = net(obs)
-        action = policy(ac_logits, from_logits=True).numpy()
-        print(np.squeeze(action))
-        action = int(np.squeeze(action))
-        obs, rew, done, _ = env.step(action)
+        env.render()
+        obs = obs.reshape(tuple([-1, ] + list(obs.shape)))
+        ac_logits, val = trainer.net(obs)
+        action = policy.get_action(ac_logits)
+        obs, rew, done, _ = env.step(np.squeeze(action))
         ret += rew
-    print('Episode return =', ret)
+        step += 1
+    print('Episode return = {} after {} steps'.format(ret, step))
 
 
 def run(args):
-    env_name = 'CartPole-v0'
-    num_envs = 4
-    env = VecEnv(env_name, num_envs=num_envs)
-    opt = tf.keras.optimizers.Adam(lr=3.0e-4)
+    env = VecEnv(args.env, num_envs=args.cores)
+    opt = tf.keras.optimizers.Adam(lr=2.0e-4)
 
     in_dim = env.observation_space.shape
+    out_dims = env.get_action_shape() + (1, )  # create tuple for shared network
     net = SharedMLPNet(in_dim=in_dim,
-                       out_dims=(env.action_space.n, 1),
-                       activation=tf.nn.tanh)
+                       out_dims=out_dims,
+                       activation=tf.nn.relu)
 
     trainer = PPOTrainer(net=net,
                          opt=opt,
                          env=env,
                          log_path='/var/tmp/delete_me')
     trainer.restore('/var/tmp/delete_me')
-    trainer.train(epochs=200)
+    trainer.train(epochs=100)
     trainer.save()
 
 
 if __name__ == '__main__':
     args = utils.get_default_args()
+    args.env = 'RoboschoolReacher-v1'
+    # args.env = 'CartPole-v1'
     print(args)
     run(args)
     # evaluate(args)
