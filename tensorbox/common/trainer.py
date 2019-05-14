@@ -18,6 +18,8 @@ class Trainer(ABC):
         self.net = net
         self.opt = opt
         self.debug_level = debug_level
+        self.training = False
+
         if log_path is not None:
             self.log_path = log_path
             print('Logging into:', self.log_path)
@@ -53,7 +55,7 @@ class Trainer(ABC):
             print("Restored from {}".format(self.manager.latest_checkpoint))
             restore_successful = True
         else:
-            print("Initializing from scratch.")
+            print("Initializing parameters from scratch.")
         return restore_successful
 
     def save(self):

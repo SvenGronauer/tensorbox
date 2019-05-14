@@ -25,7 +25,7 @@ class PPOTrainer(ReinforcementTrainer):
         self.dataset_buffer_size = self.batch_size * 8
 
         """ ppo parameters """
-        self.K = 1
+        self.K = 2
         self.gamma = 0.99
         self.clip_value = 0.2
         self.start_clip_value = 0.2
@@ -33,7 +33,8 @@ class PPOTrainer(ReinforcementTrainer):
         self.policy_distribution = get_probability_distribution(env.action_space)
         # self.action_shape = env.get_action_shape()
         self.action_shape = env.action_space.shape
-        self.summary_writer = tf.summary.create_file_writer(self.log_path)
+        # self.summary_writer = tf.summary.create_file_writer(self.log_path)
+        self.summary_writer = None
 
         self.latest_trajectory = None
 
@@ -102,12 +103,14 @@ class PPOTrainer(ReinforcementTrainer):
     def get_action_and_value(self, x):
         """ get actions and values w.r.t. behavior network as numpy arrays"""
         action_logits, value = self.behavior_net(x)
-        action = self.policy_distribution.sample(action_logits)
-        return np.squeeze(action.numpy()), np.squeeze(value.numpy())
+        action = self.policy_distribution.get_action(action_logits)
+        # return np.squeeze(action.numpy()), np.squeeze(value.numpy())
+        return action, np.squeeze(value.numpy())
 
     def get_trajectories(self, dtype=np.float32):
         """ run behavior-policy roll-outs to obtain trajectories"""
         obs = self.env.reset()
+        ac = self.env.action_space.sample()
         num_env = obs.shape[0] if len(obs.shape) >= 2 else 1
         if isinstance(self.policy_distribution, GaussianDistribution):
             a_shape = (self.horizon, num_env) + self.env.get_action_shape()
@@ -186,6 +189,8 @@ class PPOTrainer(ReinforcementTrainer):
 
     def logging(self, step):
         # t = self.opt.step  # todo make me opt step
+        if not self.training:
+            return
         t = step
         with self.summary_writer.as_default():
             # t = self.opt.iterations
@@ -200,7 +205,14 @@ class PPOTrainer(ReinforcementTrainer):
             tf.summary.scalar('mean policy ratio', self.mean_policy_ratio.result(), step=t)
             tf.summary.scalar('mean episode return', self.latest_trajectory.mean_episode_return, step=t)
 
+    def restore(self):
+        super(PPOTrainer, self).restore()  # restores only policy net
+        self.behavior_net.set_weights(self.net.get_weights())  # copy weights
+        print('copied net.weights -> behavior_net.weights')
+
     def train(self, epochs):
+        self.training = True
+        self.summary_writer = tf.summary.create_file_writer(self.log_path)
         print('Start training for {} epochs'.format(epochs))
         for epoch in range(epochs):
             ts = time.time()
@@ -219,6 +231,8 @@ class PPOTrainer(ReinforcementTrainer):
                 self.latest_trajectory.mean_episode_return,
                 time.time() - ts))
             self.logging(epoch)
+        self.training = False
+        self.behavior_net.set_weights(self.net.get_weights())  # copy weights
 
     @tf.function
     def train_step(self, batch, clip_value, **kwargs):

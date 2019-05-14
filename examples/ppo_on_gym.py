@@ -24,23 +24,27 @@ def evaluate(args):
 
     done = False
     obs = env.reset()
+    print('obs.shape=', obs.shape)
     ret = 0
     policy = get_probability_distribution(env.action_space)
     step = 0
     while not done:
         env.render()
-        obs = obs.reshape(tuple([-1, ] + list(obs.shape)))
+        obs = np.expand_dims(obs, axis=0)
+        # shaped_obs = obs.reshape(tuple([-1, ] + list(obs.shape)))
         ac_logits, val = trainer.net(obs)
         action = policy.get_action(ac_logits)
-        obs, rew, done, _ = env.step(np.squeeze(action))
+        obs, rew, done, _ = env.step(action)
+        print('action:', action)
         ret += rew
         step += 1
     print('Episode return = {} after {} steps'.format(ret, step))
+    env.close()
 
 
 def run(args):
     env = VecEnv(args.env, num_envs=args.cores)
-    opt = tf.keras.optimizers.Adam(lr=2.0e-4)
+    opt = tf.keras.optimizers.Adam(lr=3.0e-4)
 
     in_dim = env.observation_space.shape
     out_dims = env.get_action_shape() + (1, )  # create tuple for shared network
@@ -52,15 +56,18 @@ def run(args):
                          opt=opt,
                          env=env,
                          log_path='/var/tmp/delete_me')
-    trainer.restore()
-    trainer.train(epochs=100)
+    # trainer.restore()
+    trainer.train(epochs=150)
     trainer.save()
+    env.close()
 
 
 if __name__ == '__main__':
     args = utils.get_default_args()
     args.env = 'RoboschoolReacher-v1'
     # args.env = 'CartPole-v1'
+    # args.env = 'Pendulum-v0'
+    args.env = 'MountainCarContinuous-v0'
     print(args)
     run(args)
     # evaluate(args)

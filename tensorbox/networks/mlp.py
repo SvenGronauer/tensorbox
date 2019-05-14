@@ -9,7 +9,7 @@ class MLPNet(keras.Model, BaseNetwork):
         self.in_dim = in_dim
         self.out_dim = out_dim
 
-        hidden_units = list(units) + [out_dim]
+        hidden_units = list(units) + list(out_dim)
         self.dense_layers = []
         for n, n_units in enumerate(hidden_units):
             layer = layers.Dense(units=n_units,

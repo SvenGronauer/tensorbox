@@ -5,6 +5,7 @@ import time
 from abc import ABC, abstractmethod
 import gym
 
+
 def worker(worker_remote, parent_remote, env_name, config):
     """
     Worker that runs an RL environment as sub-process
