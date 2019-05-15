@@ -106,7 +106,7 @@ def create_tetris_dataset(train_val_split=0.8,
                           width=128,
                           batch_size=4,
                           noise=0.1,
-                          buffer_size=128,
+                          buffer_size=16,
                           apply_preprocessing=True):
 
     gen = ImageGenerator(noise=noise, height=height, width=width)
@@ -126,7 +126,7 @@ def create_tetris_dataset(train_val_split=0.8,
     ds_val = tf.data.Dataset.from_tensor_slices((images[train_size:], ground_truths[train_size:]))
 
     if apply_preprocessing:
-        ds_train = ds_train.shuffle(buffer_size).batch(batch_size)
+        ds_train = ds_train.batch(batch_size).prefetch(buffer_size)
         ds_val = ds_val.batch(batch_size)
 
     return ds_train, ds_val

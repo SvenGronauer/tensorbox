@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorbox.datasets.dataset_utils import convert_rgb_images_to_float
+from tensorbox.datasets.data_utils import convert_rgb_images_to_float
 
 
 def create_mnist_dataset(train_val_split=0.8, batch_size=32, apply_preprocessing=True):
@@ -16,8 +16,8 @@ def create_mnist_dataset(train_val_split=0.8, batch_size=32, apply_preprocessing
     ds_val = tf.data.Dataset.from_tensor_slices((val_images, val_labels))
 
     if apply_preprocessing:
-        buffer_size = batch_size * 16
-        ds_train = ds_train.map(convert_rgb_images_to_float).shuffle(buffer_size).batch(batch_size)
+        buffer_size = 16
+        ds_train = ds_train.map(convert_rgb_images_to_float).batch(batch_size).prefetch(buffer_size)
         ds_val = ds_val.map(convert_rgb_images_to_float).batch(batch_size)
     return ds_train, ds_val
 

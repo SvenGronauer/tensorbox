@@ -22,6 +22,12 @@ def get_boston_housing(train_val_split):
     return create_boston_dataset(train_val_split)
 
 
+@register_dataset('cifar-10')
+def get_cifar_10(train_val_split):
+    from tensorbox.datasets.cifar_10 import create_cifar_10_dataset
+    return create_cifar_10_dataset(train_val_split)
+
+
 @register_dataset('mnist')
 def get_mnist(train_val_split):
     from tensorbox.datasets.mnist import create_mnist_dataset
