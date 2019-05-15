@@ -65,6 +65,7 @@ def run(args):
 if __name__ == '__main__':
     args = utils.get_default_args()
     args.env = 'RoboschoolReacher-v1'
+    args.env = 'RoboschoolHumanoid-v1'
     # args.env = 'CartPole-v1'
     # args.env = 'Pendulum-v0'
     args.env = 'MountainCarContinuous-v0'

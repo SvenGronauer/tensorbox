@@ -1,17 +1,18 @@
 import tensorflow as tf
 from tensorbox.datasets import get_dataset
 from tensorflow.python import keras, layers
+import numpy as np
 
+""" tensorbox imports"""
 from tensorbox.networks.mlp import MLPNet
 from tensorbox.common.trainer import SupervisedTrainer
 from tensorbox.datasets import get_dataset
-import numpy as np
 
 # set this flag to fix cudNN bug on RTX graphics card
 tf.config.gpu.set_per_process_memory_growth(True)
 
 
-def fast_gradient_sign_method(batch, net, eps=0.07):
+def fast_gradient_sign_method(batch, net, eps=0.05):
     data, label = batch
     with tf.GradientTape() as tape:
         tape.watch(data)
@@ -67,7 +68,7 @@ def evaluate(test_set, net, debug=False):
     losses = []
     for n_batch, batch in enumerate(test_set):
         data, label = batch
-        y = net(data)
+        y = net(data, training=False)
         mse = tf.reduce_mean(tf.square(y - label))
         losses.append(mse.numpy())
         if debug:
@@ -77,19 +78,18 @@ def evaluate(test_set, net, debug=False):
 
 
 def create_adversarial_set(dataset, net, train_val_split=0.8):
-
+    print('creating adversarial dataset...')
     adversarial_set = []
     labels = []
     for batch in dataset.test:
         data, label = batch
         noise = fast_gradient_sign_method(batch, net)
-
         new_data_sample = (data + noise).numpy()
         adversarial_set.append(new_data_sample)
         labels.append(label.numpy())
-    adversarial_set = np.concatenate(tuple(adversarial_set), axis=0)
-    labels = np.concatenate(tuple(labels), axis=0)
-    return adversarial_set
+    adversarial_data = np.concatenate(tuple(adversarial_set), axis=0)
+    adversarial_labels = np.concatenate(tuple(labels), axis=0)
+    return tf.data.Dataset.from_tensor_slices((adversarial_data, adversarial_labels)).batch(64)
 
 
 def train_network(dataset, net, opt, epochs, use_jacobian_norm=True):
@@ -103,9 +103,9 @@ def train_network(dataset, net, opt, epochs, use_jacobian_norm=True):
             loss = train_func(batch, net, opt)
             # print('loss with norm(J): ', loss)
             losses.append(loss)
-        print('Epoch: {}  train loss: {:0.2f}  test loss: {:0.2f}'.format(epoch,
-              np.mean(losses),
-              evaluate(dataset.test, net)))
+    print('Epoch: {}  train loss: {:0.2f}  test loss: {:0.2f}'.format(epoch+1,
+          np.mean(losses),
+          evaluate(dataset.test, net)))
 
 
 def train_and_test_adversarial():
@@ -114,14 +114,18 @@ def train_and_test_adversarial():
                  out_dim=dataset.y_shape,
                  activation=tf.nn.relu,
                  units=(64, 64))
-    opt = tf.keras.optimizers.Adam()
+    opt = tf.keras.optimizers.Adam(lr=1.0e-3)
 
-    create_adversarial_set(dataset, net)
-    # train_network(dataset, net, opt, epochs=100)
-
+    train_epochs = 150
+    train_network(dataset, net, opt, epochs=train_epochs, use_jacobian_norm=True)
+    adversarial_set = create_adversarial_set(dataset, net)
+    eval_loss = evaluate(adversarial_set, net)
+    print('Adversarial loss: {:0.4f}'.format(eval_loss))
 
 def run_with_parameter_search():
-    pass
+    activations = [tf.nn.relu, tf.nn.tanh]
+    units =[(64, 64), (256, 256), (400, 300)]
+
 
 
 if __name__ == '__main__':
