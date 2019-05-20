@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.python.keras import datasets
 import numpy as np
-from tensorbox.common.classes import Dataset
+from tensorbox.common.classes import Dataset, DatasetWrapper
 import tensorbox.datasets.data_utils as du
 
 
@@ -26,12 +26,11 @@ def create_cifar_10_dataset(batch_size=64, apply_preprocessing=True, **kwargs):
 
     x_shape = train_x.shape[1:]
     y_shape = train_y.shape[1:]
-    return Dataset(train=ds_train,
-                   test=ds_test,
-                   mean=127.5,
-                   std=127.5,
-                   x_shape=x_shape,
-                   y_shape=y_shape)
+
+    return DatasetWrapper(train=ds_train,
+                          test=ds_test,
+                          x_shape=x_shape,
+                          y_shape=y_shape)
 
 
 if __name__ == '__main__':

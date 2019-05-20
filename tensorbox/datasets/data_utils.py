@@ -3,6 +3,7 @@ import sys
 import requests
 import tensorbox.common.utils as utils
 import tensorflow as tf
+import numpy as np
 
 
 def download_file(url, save_directory='/var/tmp/data'):
@@ -36,6 +37,16 @@ def convert_rgb_images_to_float(image, label):
     image = (image - 127.5) / 127.5
 
     return image, label
+
+
+def get_mean_std(array):
+    mean = np.mean(array, axis=0)
+    std = np.std(array - mean, axis=0)
+    return mean, std
+
+
+def normalize(np_array, mean, std):
+    return (np_array - mean) / std
 
 
 def type_cast(data, label, dtype=tf.float32):
