@@ -31,7 +31,7 @@ def get_cifar_10(train_val_split):
 @register_dataset('lissajous')
 def get_lissajous(train_val_split):
     from tensorbox.datasets.lissajous import create_lissajous_dataset
-    return create_lissajous_dataset(train_val_split)
+    return create_lissajous_dataset()
 
 
 @register_dataset('mnist')

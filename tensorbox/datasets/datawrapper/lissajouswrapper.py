@@ -61,7 +61,7 @@ class LissajousWrapper(BaseWrapper):
         return np.array([self.amplitude[0] * np.sin(self.frequency[0] * t + self.phase[0]),
                          self.amplitude[1] * np.sin(self.frequency[1] * t + self.phase[1])])
 
-    def _create_curve(self, T):
+    def _create_curve(self, T, allow_noise=False):
         ''' Call this function to create T samples and their labels '''
 
         t = np.linspace(0.0, 2.0 * np.pi, T, dtype = self.dtype)
@@ -73,14 +73,18 @@ class LissajousWrapper(BaseWrapper):
             X += np.random.normal(0.0, self.stdX, size = X.shape)
             Y += np.random.normal(0.0, self.stdY, size = Y.shape)
 
+        if allow_noise:
+            X += np.random.normal(0.0, self.stdX, size=X.shape)
+            Y += np.random.normal(0.0, self.stdY, size=Y.shape)
+
         return X, Y
 
     def _create_data_set(self, T):
         ''' Implementation of the base class, here the actual data is created '''
 
-        self.X_train, self.Y_train = self._create_curve(self.T)
-        self.X_val, self.Y_val = self._create_curve(self.T / 2)
-        self.X_test, self.Y_test = self._create_curve(self.T * 2)
+        self.X_train, self.Y_train = self._create_curve(self.T, allow_noise=True)
+        self.X_val, self.Y_val = self._create_curve(self.T / 2, allow_noise=True)
+        self.X_test, self.Y_test = self._create_curve(self.T * 2, allow_noise=False)
 
         self.Y_train_raw = None
         self.Y_val_raw = None
