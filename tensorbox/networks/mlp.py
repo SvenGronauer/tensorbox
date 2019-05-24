@@ -5,7 +5,9 @@ from tensorbox.networks import BaseNetwork
 
 class MLPNet(keras.Model, BaseNetwork):
     def __init__(self, in_dim, out_dim, units=(64, 64), activation=tf.nn.relu):
-        super(MLPNet, self).__init__()
+        keras.Model.__init__(self)
+        BaseNetwork.__init__(self, units=units, activation=activation)
+        # super(MLPNet, self).__init__(units=units, activation=activation)
         self.in_dim = in_dim
         self.out_dim = out_dim
 
@@ -32,7 +34,10 @@ class MLPNet(keras.Model, BaseNetwork):
                       activation=self.activation)
 
     def get_config(self):
-        raise NotImplementedError
+        return dict(units=self.units,
+                    activation=self.activation,
+                    in_dim=self.in_dim,
+                    out_dim=self.out_dim)
 
     def init_weights_biases(self):
         """ perform forward-pass to create weights and biases"""

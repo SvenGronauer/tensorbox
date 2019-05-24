@@ -6,9 +6,35 @@ import sys
 import tensorflow as tf
 
 
-def get_default_args(func_name='testing', debug_level=0):
+def convert_to_string_only_dict(input_dict):
+    """
+    Convert all values of a dictionary to string objects
+    Useful, if you want to save a dictionary as .json file to the disk
+
+    :param input_dict: dict()
+    :return:
+    """
+    converted_dict = dict()
+    for key, value in input_dict.items():
+        if isinstance(value, dict):  # transform dictionaries recursively
+            converted_dict[key] = convert_to_string_only_dict(value)
+        elif isinstance(value, type):
+            converted_dict[key] = str(value.__name__)
+        else:
+            converted_dict[key] = str(value)
+    return converted_dict
+
+
+def get_default_args(func_name='testing', 
+                     debug_level=0):
+    """ create the default arguments for program execution
+    :param func_name: 
+    :param debug_level: 
+    :return: 
+    """
     if sys.version_info[0] < 3:
         raise Exception("Must be using Python 3")
+    default_path = '/var/tmp/ga87zej/'
 
     parser = argparse.ArgumentParser(description='This is the default parser.')
     parser.add_argument('--alg', default=os.cpu_count(), type=int,
@@ -21,13 +47,12 @@ def get_default_args(func_name='testing', debug_level=0):
                         help='Default environment for RL algorithms')
     parser.add_argument('--func', dest='func', default=func_name,
                         help='Specify function name to be testing')
-    parser.add_argument('--log', dest='log_path', default='/var/tmp/ga87zej/',
+    parser.add_argument('--log', dest='log_dir', default=default_path,
                         help='Set the seed for random generator')
+
     args = parser.parse_args()
-    if not args.log_path:
-        default_path = '/var/tmp/ga87zej/'
-        args.log_path = os.path.join(default_path, args.func,
-                                     datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S"))
+    args.log_dir = os.path.join(default_path, args.func,
+                                datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S"))
     return args
 
 
@@ -43,7 +68,8 @@ def normalize(xs,
     return (xs - xs.mean(axis=axis)) / (xs.std(axis=axis) + eps)
 
 
-def make_env(env_name, seed=None):
+def make_env(env_name, 
+             seed=None):
     """ Creates a Gym Environment
     :param env_name: str, name of environment
     :param seed: int, make experiments deterministic
@@ -81,4 +107,4 @@ def safe_mean(xs):
     :param xs: np.array, array to calculate mean
     :return: np.float, mean value of xs
     """
-    return np.nan if len(xs) == 0 else np.mean(xs)
+    return np.nan if len(xs) == 0 else float(np.mean(xs))

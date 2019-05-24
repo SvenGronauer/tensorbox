@@ -1,6 +1,10 @@
 from collections import namedtuple
 import tensorflow as tf
+import json
+import os
+
 import tensorbox.datasets.data_utils as du
+import tensorbox.common.utils as utils
 
 
 Trajectory = namedtuple('Trajectory', ['observations',
@@ -12,6 +16,27 @@ Trajectory = namedtuple('Trajectory', ['observations',
                                        'horizon'])
 
 
+class Configuration(object):
+    def __init__(self, net, opt, method, log_dir):
+        self.net = net
+        self.opt = opt
+        self.method = method
+        self.log_dir = log_dir
+
+    def as_dict(self):
+        return dict(method=self.method.get_config(),
+                    network=self.net.get_config(),
+                    optimizer=self.opt.get_config())
+
+    def dump(self):
+        str_dict = utils.convert_to_string_only_dict(self.as_dict())
+
+        file_name = os.path.join(self.log_dir, 'config.json')
+        with open(file_name, 'w') as fp:
+            json.dump(str_dict, fp, sort_keys=True, indent=4, separators=(',', ': '))
+        print('Created log file - {}'.format(file_name))
+
+
 class DatasetWrapper(object):
     def __init__(self,
                  x_train,
@@ -21,6 +46,7 @@ class DatasetWrapper(object):
                  batch_size=32,
                  wrapped_class=None):
 
+        assert isinstance(batch_size, int), 'batch size must be an integer value'
         # tf.Dataset() placeholders
         self.train = None
         self.test = None

@@ -49,7 +49,7 @@ def evaluate(test_set, net, debug=False):
 def train_network(dataset, net, opt, epochs, use_marquardt_levenberg):
 
     # train_func = train_step_with_jacobian_norm if use_jacobian_norm else train_step
-    train_func = train_step_with_marquardt_levenberg if use_marquardt_levenberg else train_step_normal
+    train_func = train_step_normal
 
     losses = []
     for epoch in range(epochs):
