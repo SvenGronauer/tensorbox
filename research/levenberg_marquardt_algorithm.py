@@ -56,17 +56,17 @@ def train_network(dataset, net, opt, method, epochs, logger=None):
             logger.write(write_dic, epoch)
 
 
-def main(args, units, activation, use_marquardt=True, **kwargs):
-    dataset = get_dataset('boston_housing')
+def main(args, dataset_name, units, activation, use_marquardt=True, **kwargs):
+    dataset = get_dataset(dataset_name)
+    train_epochs = 200
 
     base_dir = '/var/tmp/ga87zej'
     log_dir = args.log_dir if args.log_dir else base_dir
-    logger = CSVLogger(log_dir, stdout=False)
+    logger = CSVLogger(log_dir, total_steps=train_epochs, stdout=False)
     net = MLPNet(in_dim=dataset.x_shape,
                  out_dim=dataset.y_shape,
                  activation=activation,
                  units=units)
-    # opt = tf.keras.methods.Adam(lr=1.0e-3)
     lr = 1.0e-3
     opt = tf.keras.optimizers.SGD(lr=lr) if use_marquardt else tf.keras.optimizers.Adam(lr=lr)
 
@@ -77,9 +77,9 @@ def main(args, units, activation, use_marquardt=True, **kwargs):
     config = Configuration(net=net,
                            opt=opt,
                            method=method,
+                           dataset=dataset,
                            log_dir=log_dir)
     config.dump()
-    train_epochs = 150
     train_network(dataset,
                   net,
                   opt,
@@ -92,19 +92,21 @@ def param_search():
     list_units = [(8, 8), (16, 16), (32, 32)]
     list_activations = ['relu', 'tanh']
     modes = [True, False]
+    dataset_names = ['boston_housing', 'lissajous']
     runs_per_setting = 5
 
-    for units in list_units:
-        for activation in list_activations:
-            for use_marquardt in modes:
-                for i in range(runs_per_setting):
-                    args = utils.get_default_args()
-                    print('============================================================')
-                    print('Units: {}, Activation: {}, Marquardt? {}'.format(units,
-                                                                            activation,
-                                                                            use_marquardt))
-                    main(args, units=units, activation=activation, use_marquardt=use_marquardt)
-            return 0
+    for ds_name in dataset_names:
+        for units in list_units:
+            for activation in list_activations:
+                for use_marquardt in modes:
+                    for i in range(runs_per_setting):
+                        args = utils.get_default_args()
+                        print('============================================================')
+                        string = 'Data set: {}, Units: {}, Activation: {}, Marquardt? {}'
+                        print(string.format(ds_name, units, activation, use_marquardt))
+
+                        main(args, dataset_name=ds_name, units=units,
+                             activation=activation, use_marquardt=use_marquardt)
 
 
 if __name__ == '__main__':

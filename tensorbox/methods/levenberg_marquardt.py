@@ -27,23 +27,23 @@ class LevenbergMarquardt(UpdateMethod):
             output = net(data)
             loss = self.loss_func(label, output)
         de_dw = t.gradient(loss, net.trainable_variables)
-        dy_dw = t.jacobian(output, net.trainable_variables)
+        dy_dw = t.gradient(output, net.trainable_variables)  # equals the sum over batch
+        # dy_dw = t.jacobian(output, net.trainable_variables)  # BUG - RAM increases until crash
         del t  # free memory since gradient tape is persistent
 
         for i, (jac, gradient) in enumerate(zip(dy_dw, de_dw)):
 
-            assert len(jac.shape) == 4 or len(jac.shape) == 3, 'Unexpected shape of Jacobian.'
-            j_mean = tf.reduce_mean(jac, axis=0)  # take mean over batch
-            if len(jac.shape) == 4:  # weights are of shape (dim y, w_l-1, w_l)
-                shape_flat_weights = (-1, j_mean.shape[1] * j_mean.shape[2])
-                j = tf.reshape(j_mean, shape_flat_weights)
-            else:  # biases are of shape (dim y, w_l)
-                j = j_mean  # no reshape necessary
+            assert len(jac.shape) == 1 or len(jac.shape) == 2, 'Unexpected shape of Jacobian.'
+            if len(jac.shape) == 2:  # weights are of shape (w_l-1, w_l)
+                flat_weights_shape = (-1, jac.shape[0] * jac.shape[1])
+                j = tf.reshape(jac, flat_weights_shape)
+            else:  # biases are of shape (w_l)
+                j = tf.reshape(jac, (-1, jac.shape[0]))  # flatten
+
             # @ is equivalent to tf.matmul()
             approximate_hessian = tf.transpose(j) @ j + self.c * tf.eye(j.shape[1])
-            # tf.linalg.solve() is approximately two times faster than tf.linalg.inv()
             dw = tf.linalg.solve(approximate_hessian, tf.reshape(gradient, (-1, 1)))
-            dw = tf.reshape(dw, gradient.shape)  # flattened -> original shape of w
+            dw = tf.reshape(dw, gradient.shape)  # flatten -> original shape of w
             assert dw.shape == gradient.shape, 'shapes do not match'
             updates.append(dw)
 

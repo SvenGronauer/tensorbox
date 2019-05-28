@@ -1,3 +1,4 @@
+import tensorflow as tf
 from tensorbox.methods.basemethod import UpdateMethod
 
 
