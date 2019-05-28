@@ -1,6 +1,6 @@
 from tensorflow.python import layers, keras
 import tensorflow as tf
-from tensorbox.networks import BaseNetwork
+from tensorbox.networks.basenet import BaseNetwork
 
 
 class SharedMLPNet(keras.Model, BaseNetwork):

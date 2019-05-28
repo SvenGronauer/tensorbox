@@ -1,4 +1,4 @@
-from tensorbox.methods import UpdateMethod
+from tensorbox.methods.basemethod import UpdateMethod
 
 
 class GradientDescent(UpdateMethod):

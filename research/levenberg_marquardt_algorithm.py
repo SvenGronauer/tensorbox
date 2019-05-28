@@ -61,7 +61,7 @@ def main(args, units, activation, use_marquardt=True, **kwargs):
 
     base_dir = '/var/tmp/ga87zej'
     log_dir = args.log_dir if args.log_dir else base_dir
-    logger = CSVLogger(log_dir, stdout=True)
+    logger = CSVLogger(log_dir, stdout=False)
     net = MLPNet(in_dim=dataset.x_shape,
                  out_dim=dataset.y_shape,
                  activation=activation,

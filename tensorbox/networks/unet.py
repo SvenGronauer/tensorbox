@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.python import layers, keras  # Fix for TF2.0a and PyCharm
-from tensorbox.networks import BaseNetwork
+from tensorbox.networks.basenet import BaseNetwork
 
 
 class DoubleConvolution(layers.Layer):

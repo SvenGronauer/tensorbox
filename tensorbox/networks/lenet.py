@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.python import layers, keras
-from tensorbox.networks import BaseNetwork
+from tensorbox.networks.basenet import BaseNetwork
 
 
 class LeNet(keras.Model, BaseNetwork):

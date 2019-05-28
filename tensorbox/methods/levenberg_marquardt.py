@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorbox.methods import UpdateMethod
+from tensorbox.methods.basemethod import UpdateMethod
 
 
 class LevenbergMarquardt(UpdateMethod):
