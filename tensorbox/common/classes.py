@@ -1,11 +1,11 @@
-from collections import namedtuple
-import tensorflow as tf
 import json
 import os
+from collections import namedtuple
+from abc import ABC, abstractmethod
+import tensorflow as tf
 
-import tensorbox.datasets.data_utils as du
 import tensorbox.common.utils as utils
-
+import tensorbox.datasets.data_utils as du
 
 Trajectory = namedtuple('Trajectory', ['observations',
                                        'actions',
@@ -16,27 +16,55 @@ Trajectory = namedtuple('Trajectory', ['observations',
                                        'horizon'])
 
 
+class BaseHook(ABC):
+    """ Abstract Hook Class """
+
+    @abstractmethod
+    def final(self):
+        """ final call of hook"""
+        pass
+
+    @abstractmethod
+    def hook(self):
+        pass
+
+
 class Configuration(object):
-    def __init__(self, net, opt, method, dataset, log_dir):
+    """ This class holds information about the settings of the current run."""
+    def __init__(self,
+                 net,
+                 opt,
+                 method,
+                 dataset,
+                 logger,
+                 log_dir,
+                 config_file_name='config.json',
+                 **kwargs):
         self.net = net
         self.opt = opt
         self.method = method
         self.dataset = dataset
+        self.logger = logger
         self.log_dir = log_dir
+        self.kwargs = kwargs
+        self.config_file_name = config_file_name
 
     def as_dict(self):
+        """ Returns current configuration as dictionary."""
         return dict(method=self.method.get_config(),
                     network=self.net.get_config(),
                     dataset=self.dataset.get_config(),
-                    optimizer=self.opt.get_config())
+                    optimizer=self.opt.get_config(),
+                    log_dir=self.log_dir)
 
     def dump(self):
+        """ Dumps the configuration to the disk at the specified log directory."""
         str_dict = utils.convert_to_string_only_dict(self.as_dict())
 
-        file_name = os.path.join(self.log_dir, 'config.json')
+        file_name = os.path.join(self.log_dir, self.config_file_name)
         with open(file_name, 'w') as fp:
             json.dump(str_dict, fp, sort_keys=True, indent=4, separators=(',', ': '))
-        print('Created log file - {}'.format(file_name))
+        print('Created log file: {}'.format(file_name))
 
 
 class DatasetWrapper(object):

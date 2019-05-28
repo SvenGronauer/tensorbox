@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
+
+import gym
 import numpy as np
 import tensorflow as tf
-import gym
 
 
 def get_probability_distribution(space):

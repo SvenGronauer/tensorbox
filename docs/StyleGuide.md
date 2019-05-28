@@ -1,2 +1,2 @@
-# MLToolbox
-another machine learning toolbox for research purposes
+# Style Guide
+The code is based on the PEP guide lines and the Google Coding Scheme.

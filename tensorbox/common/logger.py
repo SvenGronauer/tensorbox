@@ -1,14 +1,16 @@
 import os
 import sys
-import numpy as np
 import time
 from abc import ABC, abstractmethod
 
+import numpy as np
+
 
 class LoggerBase(ABC):
-    def __init__(self, directory, stdout):
-        if directory:
-            os.makedirs(directory, exist_ok=True)
+    def __init__(self, log_dir, file_name, stdout=True):
+        self.log_dir = log_dir
+        self.file_name = file_name
+        os.makedirs(log_dir, exist_ok=True)
         self.stdout = stdout
         # file_path = os.path.join(dir, 'summary.csv')
         self.file = None
@@ -42,8 +44,8 @@ class LoggerBase(ABC):
 
 class ConsoleLogger(LoggerBase):
     def __init__(self):
-        directory = None
-        super(ConsoleLogger, self).__init__(directory, stdout=True)
+        log_dir = None
+        super(ConsoleLogger, self).__init__(log_dir, file_name='ConsoleLogger', stdout=True)
 
     def write(self, kvs, step):
         self.print_stdout(kvs, step)
@@ -53,9 +55,13 @@ class ConsoleLogger(LoggerBase):
 
 
 class CSVLogger(LoggerBase):
-    def __init__(self, directory, total_steps, stdout=True):
-        super(CSVLogger, self).__init__(directory, stdout)
-        file_path = os.path.join(directory, 'summary.csv')
+    def __init__(self,
+                 log_dir,
+                 total_steps,
+                 file_name='summary.csv',
+                 **kwargs):
+        super(CSVLogger, self).__init__(log_dir, file_name, **kwargs)
+        file_path = os.path.join(self.log_dir, file_name)
         self.file = open(file_path, 'w+t')
         self.progress_bar = plot_progress
         self.total_steps = total_steps

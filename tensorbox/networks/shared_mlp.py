@@ -1,5 +1,6 @@
-from tensorflow.python import layers, keras
 import tensorflow as tf
+from tensorflow.python import layers, keras
+
 from tensorbox.networks.basenet import BaseNetwork
 
 

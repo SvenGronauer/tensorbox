@@ -1,38 +1,54 @@
-import tensorflow as tf
-from tensorflow.python import keras
 import time
 from abc import ABC, abstractmethod
 
+import tensorflow as tf
+from tensorflow.python import keras
 import tensorbox.common.utils as utils
 
 
 class Trainer(ABC):
 
     def __init__(self,
-                 net,
-                 opt,
-                 log_path,
-                 debug_level,
-                 callbacks=None,
+                 net=None,
+                 opt=None,
+                 method=None,
+                 logger=None,
+                 log_dir=None,
+                 debug_level=None,
+                 from_config=None,
+                 hooks=None,
                  **kwargs):
-        self.net = net
-        self.opt = opt
+
+        assert from_config or (net and opt), 'Provide values for initialization.'
+
+        if from_config:
+            self.config = from_config
+            self.net = from_config.net
+            self.opt = from_config.opt
+            self.method = from_config.method
+            self.logger = from_config.logger
+            self.log_dir = from_config.log_dir
+        else:
+            self.net = net
+            self.opt = opt
+            self.method = method
+            self.logger = logger
+            self.log_dir = log_dir
         self.debug_level = debug_level
         self.training = False
-
-        if log_path is not None:
-            self.log_path = log_path
-            print('Logging into:', self.log_path)
-        else:
-            raise ValueError('log_path is None!')
-        self.callbacks = callbacks
+        self.hooks = hooks
 
         self.checkpoint = tf.train.Checkpoint(step=tf.Variable(1),
-                                              optimizer=opt,
-                                              net=net)
+                                              optimizer=self.opt,
+                                              net=self.net)
         self.manager = tf.train.CheckpointManager(self.checkpoint,
-                                                  self.log_path,
+                                                  self.log_dir,
                                                   max_to_keep=5)
+
+        # check if all variables were defined
+        assert self.log_dir, 'No log path was defined'
+        assert self.net and self.opt and self.method and self.logger, \
+            'Not all params passed. Provide values for: net, opt, method, logger'
 
     def __call__(self, x, *args, **kwargs):
         return self.predict(x)
@@ -59,52 +75,63 @@ class Trainer(ABC):
         return restore_successful
 
     def save(self):
-        utils.mkdir(self.log_path)
+        utils.mkdir(self.log_dir)
         self.checkpoint.step.assign_add(1)
         save_path = self.manager.save()
         print("Saved checkpoint for step {}: {}".format(int(self.checkpoint.step), save_path))
 
     @abstractmethod
-    def train(self, epochs):
+    def train(self, total_steps):
         pass
 
 
 class SupervisedTrainer(Trainer):
     def __init__(self,
-                 net,
-                 opt,
                  loss_func,
-                 train_set,
-                 test_set,
-                 log_path,
-                 debug_level=0,
+                 metric,
+                 dataset,
                  **kwargs):
-        super(SupervisedTrainer, self).__init__(net, opt, log_path, debug_level, **kwargs)
-        assert isinstance(train_set, tf.data.Dataset), "Wrong format for dataset."
+        super(SupervisedTrainer, self).__init__(**kwargs)
 
-        self.train_set = train_set
-        self.test_set = test_set
+        self.dataset = dataset
         self.loss_func = loss_func
+        self.metric = metric
 
         self.loss_metric = keras.metrics.Mean(name='test_loss')
         self.acc = keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
 
         self.restore()  # try to restore old checkpoints
 
-    def train(self, epochs, metrics=None):
-        for epoch in range(epochs):
+    def evaluate_test_set(self):
+        losses = []
+        for n_batch, batch in enumerate(self.dataset.test):
+            data, label = batch
+            y = self.net(data, training=False)
+            loss = self.loss_func(label, y)
+            # mse = tf.reduce_mean(tf.square(y - label))
+            losses.append(loss.numpy())
+        return utils.safe_mean(losses)
+
+    def train(self, total_steps):
+        for step in range(total_steps):
             batch_losses = []
             batch_accs = []
             time_start = time.time()
-            for i, batch in enumerate(self.train_set):
-                batch_loss, batch_acc = self.train_step(batch)
-                batch_losses.append(batch_loss)
-                batch_accs.append(batch_acc)
-            string = 'Epoch {} \t Loss: {:0.3f} \t Acc {:0.2f}% \t took {:0.2f}s'
-            print(string.format(epoch,
-                                utils.safe_mean(batch_losses),
-                                utils.safe_mean(batch_accs),
-                                time.time() - time_start))
+            for i, batch in enumerate(self.dataset.train):
+                updates, loss = self.method.get_updates_and_loss(batch, self.net)
+                loss_value = self.metric(loss).numpy()
+                batch_losses.append(loss_value)
+                self.opt.apply_gradients(zip(updates, self.net.trainable_variables))
+
+            write_dic = dict(loss_train=utils.safe_mean(batch_losses),
+                             loss_test=self.evaluate_test_set(),
+                             time=time.time() - time_start)
+            self.logger.write(write_dic, step)
+            if self.hooks:
+                [h.hook() for h in self.hooks]  # call all hooks
+
+        if self.hooks:
+            [h.final() for h in self.hooks]  # call all final hook methods
 
     @tf.function
     def train_step(self, batch):
@@ -127,8 +154,8 @@ class ReinforcementTrainer(Trainer, ABC):
                  net,
                  opt,
                  env,
-                 log_path,
+                 log_dir,
                  debug_level,
                  **kwargs):
-        super(ReinforcementTrainer, self).__init__(net, opt, log_path, debug_level, **kwargs)
+        super(ReinforcementTrainer, self).__init__(net, opt, log_dir, debug_level, **kwargs)
         self.env = env

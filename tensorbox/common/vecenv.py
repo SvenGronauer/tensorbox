@@ -1,9 +1,11 @@
-import numpy as np
 import multiprocessing as mp
-import tensorbox.common.utils as utils
 import time
 from abc import ABC, abstractmethod
+
 import gym
+import numpy as np
+
+import tensorbox.common.utils as utils
 
 
 def worker(worker_remote, parent_remote, env_name, config):

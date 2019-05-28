@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.python import layers, keras
+
 from tensorbox.networks.basenet import BaseNetwork
 
 
@@ -40,6 +41,6 @@ class MLPNet(keras.Model, BaseNetwork):
                     out_dim=self.out_dim)
 
     def init_weights_biases(self):
-        """ perform forward-pass to create weights and biases"""
+        """ perform forward-pass to init weights and biases"""
         fake_pass_shape = (1,) + self.in_dim
         self(tf.zeros(fake_pass_shape))
