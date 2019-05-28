@@ -74,7 +74,7 @@ def main(args, **kwargs):
                  activation=activation,
                  units=units)
     opt = tf.keras.optimizers.Adam(lr=1.0e-3)
-    # opt = tf.keras.optimizers.SGD(lr=1.0e-3)
+    # opt = tf.keras.methods.SGD(lr=1.0e-3)
 
     train_epochs = 50
     train_network(dataset, net, opt, epochs=train_epochs, use_marquardt_levenberg=False)

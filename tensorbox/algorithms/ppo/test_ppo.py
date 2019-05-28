@@ -61,7 +61,7 @@ class TestPPO(unittest.TestCase):
     #     horizon = 64
     #     # net = MLPNet(out_dim=5)
     #     net = SharedMLPNet(out_dims=(env.action_space.n, 1))
-    #     opt = keras.optimizers.Adam()
+    #     opt = keras.methods.Adam()
     #     trainer = PPOTrainer(net=net,
     #                          opt=opt,
     #                          env=env,

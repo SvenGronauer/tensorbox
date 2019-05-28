@@ -105,7 +105,7 @@ def generate_plots(root_directory,
 
 def main():
 
-    root_directory = '/var/tmp/ga87zej/testing'
+    root_directory = '/var/tmp/ga87zej/compare_first_order_to_second_order'
     csv_columns_of_interest = ['loss_train', 'loss_test', 'time']
 
     config_values_of_interest = ['method.name', 'network.activation', 'network.units']

@@ -1,10 +1,9 @@
 import tensorflow as tf
-import tensorflow.python.keras as keras
 import numpy as np
 import matplotlib.pyplot as plt
 
 """ tensorbox imports"""
-from tensorbox.networks.mlp import MLPNet
+from tensorbox.networks import MLPNet
 from tensorbox.datasets import get_dataset
 from tensorbox.common import utils
 
@@ -138,7 +137,7 @@ def main(args, **kwargs):
                  activation=activation,
                  units=units)
     opt = tf.keras.optimizers.Adam(lr=1.0e-3)
-    # opt = tf.keras.optimizers.SGD(lr=1.0e-3)
+    # opt = tf.keras.methods.SGD(lr=1.0e-3)
 
     train_epochs = 50
     train_network(dataset, net, opt, epochs=train_epochs, use_frobenius_norm=True)

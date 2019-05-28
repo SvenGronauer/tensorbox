@@ -4,12 +4,12 @@ import time
 from tensorflow.python import keras
 
 """ tensorbox imports"""
-from tensorbox.networks.mlp import MLPNet
+from tensorbox.networks import MLPNet
 from tensorbox.datasets import get_dataset
 from tensorbox.common import utils
 from tensorbox.common.logger import CSVLogger
 from tensorbox.common.classes import Configuration
-from tensorbox.optimizers.marquardt import MarquardtLevenberg, GradientDescent
+from tensorbox.methods import LevenbergMarquardt, GradientDescent
 
 # set this flag to fix cudNN bug on RTX graphics card
 tf.config.gpu.set_per_process_memory_growth(True)
@@ -58,28 +58,28 @@ def train_network(dataset, net, opt, method, epochs, logger=None):
 
 def main(args, units, activation, use_marquardt=True, **kwargs):
     dataset = get_dataset('boston_housing')
-    # activation = 'relu'
-    # units = (8, 8)
+
     base_dir = '/var/tmp/ga87zej'
     log_dir = args.log_dir if args.log_dir else base_dir
-    logger = CSVLogger(log_dir, stdout=False)
+    logger = CSVLogger(log_dir, stdout=True)
     net = MLPNet(in_dim=dataset.x_shape,
                  out_dim=dataset.y_shape,
                  activation=activation,
                  units=units)
-    # opt = tf.keras.optimizers.Adam(lr=1.0e-3)
-    opt = tf.keras.optimizers.SGD(lr=1.0e-3) if use_marquardt else tf.keras.optimizers.Adam()
+    # opt = tf.keras.methods.Adam(lr=1.0e-3)
+    lr = 1.0e-3
+    opt = tf.keras.optimizers.SGD(lr=lr) if use_marquardt else tf.keras.optimizers.Adam(lr=lr)
 
     loss_func = keras.losses.MeanSquaredError()
 
-    method = MarquardtLevenberg(loss_func) if use_marquardt else GradientDescent(loss_func)
+    method = LevenbergMarquardt(loss_func) if use_marquardt else GradientDescent(loss_func)
 
     config = Configuration(net=net,
                            opt=opt,
                            method=method,
                            log_dir=log_dir)
     config.dump()
-    train_epochs = 100
+    train_epochs = 150
     train_network(dataset,
                   net,
                   opt,
@@ -90,8 +90,8 @@ def main(args, units, activation, use_marquardt=True, **kwargs):
 
 def param_search():
     list_units = [(8, 8), (16, 16), (32, 32)]
-    list_activations = ['tanh', 'relu']
-    modes = [False, True]
+    list_activations = ['relu', 'tanh']
+    modes = [True, False]
     runs_per_setting = 5
 
     for units in list_units:
@@ -99,10 +99,12 @@ def param_search():
             for use_marquardt in modes:
                 for i in range(runs_per_setting):
                     args = utils.get_default_args()
+                    print('============================================================')
                     print('Units: {}, Activation: {}, Marquardt? {}'.format(units,
                                                                             activation,
                                                                             use_marquardt))
                     main(args, units=units, activation=activation, use_marquardt=use_marquardt)
+            return 0
 
 
 if __name__ == '__main__':

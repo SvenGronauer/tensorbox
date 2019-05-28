@@ -11,8 +11,8 @@ def convert_to_string_only_dict(input_dict):
     Convert all values of a dictionary to string objects
     Useful, if you want to save a dictionary as .json file to the disk
 
-    :param input_dict: dict()
-    :return:
+    :param input_dict: dict, input to be converted
+    :return: dict, converted string dictionary
     """
     converted_dict = dict()
     for key, value in input_dict.items():
@@ -91,7 +91,7 @@ def make_env(env_name,
 
 
 def mkdir(path):
-    """ create directory at given path
+    """ create directory at a given path
     :param path: str, path
     :return: bool, True if created directories
     """

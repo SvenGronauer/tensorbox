@@ -69,7 +69,7 @@ class MnistTrainer(SupervisedTrainer):
 def run_mnist(args):
     train_ds, val_ds = get_dataset('mnist')
     net = LeNet(in_dim=(28, 28, 1), out_dim=10)
-    opt = tf.keras.optimizers.Adam()  # must be tf.keras.optimizers.Adam() not keras.optimizers.Adam()  !!!
+    opt = tf.keras.optimizers.Adam()  # must be tf.keras.methods.Adam() not keras.methods.Adam()  !!!
     loss_func = keras.losses.SparseCategoricalCrossentropy()
 
     trainer = MnistTrainer(net,
