@@ -1,6 +1,7 @@
-import tensorflow as tf
 import numpy as np
 import random
+from tensorbox.common.classes import DatasetWrapper
+import tensorbox.datasets.data_utils as du
 
 
 class TetrisObject(object):
@@ -106,8 +107,7 @@ def create_tetris_dataset(train_val_split=0.8,
                           width=128,
                           batch_size=4,
                           noise=0.1,
-                          buffer_size=16,
-                          apply_preprocessing=True):
+                          normalize=True):
 
     gen = ImageGenerator(noise=noise, height=height, width=width)
     n_classes = gen.n_classes
@@ -121,13 +121,14 @@ def create_tetris_dataset(train_val_split=0.8,
         ground_truths[idx] = gt
 
     train_size = int(train_val_split*size)
-
-    ds_train = tf.data.Dataset.from_tensor_slices((images[:train_size], ground_truths[:train_size]))
-    ds_val = tf.data.Dataset.from_tensor_slices((images[train_size:], ground_truths[train_size:]))
-
-    if apply_preprocessing:
-        ds_train = ds_train.batch(batch_size).prefetch(buffer_size)
-        ds_val = ds_val.batch(batch_size)
-
-    return ds_train, ds_val
+    ds = DatasetWrapper(x_train=images[:train_size],
+                        y_train=ground_truths[:train_size],
+                        x_test=images[train_size:],
+                        y_test=ground_truths[train_size:],
+                        batch_size=batch_size,
+                        wrapped_class=None,
+                        name='Tetris-Segmentation')
+    ds.normalize_data() if normalize else None
+    ds.build_tf_dataset(mappings=(du.type_cast_sp,))
+    return ds
 

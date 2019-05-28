@@ -1,4 +1,8 @@
+"""
+This file is used to register all defined data sets in the directory
+of tensorbox.datasets
 
+"""
 registered_datasets = dict()
 
 
@@ -9,11 +13,6 @@ def register_dataset(dataset_name):
         registered_datasets[dataset_name] = func
         return func
     return wrapper
-
-
-@register_dataset("abc")
-def get_abc_dataset():
-    pass
 
 
 @register_dataset('boston_housing')
@@ -63,4 +62,4 @@ def get_dataset(dataset_name, train_val_split=0.8, debug_level=0):
         datasets = registered_datasets[dataset_name](train_val_split)
         return datasets
     else:
-        raise KeyError('not a valid dataset.')
+        raise KeyError('The data set name "{}" was not registered'.format(dataset_name))

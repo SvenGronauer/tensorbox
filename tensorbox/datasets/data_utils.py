@@ -49,9 +49,10 @@ def normalize(np_array, mean, std):
     return (np_array - mean) / std
 
 
-def type_cast(data, label, dtype=tf.float32):
-    data = tf.cast(data, dtype)
-    label = tf.cast(label, dtype)
+def type_cast_sp(data, label, dt=tf.float32):
+    """ cast values to single precision floats"""
+    data = tf.cast(data, dt)
+    label = tf.cast(label, dt)
     return data, label
 
 

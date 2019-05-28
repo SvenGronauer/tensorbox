@@ -1,13 +1,7 @@
-import tensorflow as tf
 from tensorflow.python.keras import datasets
 import numpy as np
 from tensorbox.common.classes import DatasetWrapper
-
-
-def change_type(data, label):
-    data = tf.cast(data, tf.float32)
-    label = tf.cast(label, tf.float32)
-    return data, label
+import tensorbox.datasets.data_utils as du
 
 
 def create_boston_dataset(train_val_split=0.8, batch_size=32, normalize=True):
@@ -22,10 +16,11 @@ def create_boston_dataset(train_val_split=0.8, batch_size=32, normalize=True):
                         x_test=test_x,
                         y_test=test_y,
                         batch_size=batch_size,
-                        wrapped_class=None)
+                        wrapped_class=None,
+                        name='Boston Housing')
     if normalize:
         ds.normalize_data()
-    ds.build_tf_dataset(mappings=(change_type, ))
+    ds.build_tf_dataset(mappings=(du.type_cast_sp, ))
     return ds
 
 
