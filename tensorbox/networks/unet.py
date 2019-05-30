@@ -7,10 +7,10 @@ from tensorbox.networks.basenet import BaseNetwork
 class DoubleConvolution(layers.Layer):
     """ applies two 2D-convolutions each followed by ReLU activations"""
 
-    def __init__(self, output_filters=32, kernel_size=3):
+    def __init__(self, output_filters=32, kernel_size=3, activation='relu'):
         super(DoubleConvolution, self).__init__()
-        self.c1 = layers.Conv2D(output_filters, kernel_size, activation='relu', padding='same')
-        self.c2 = layers.Conv2D(output_filters, kernel_size, activation='relu', padding='same')
+        self.c1 = layers.Conv2D(output_filters, kernel_size, activation=activation, padding='same')
+        self.c2 = layers.Conv2D(output_filters, kernel_size, activation=activation, padding='same')
 
     def call(self, x, **kwargs):
         x = self.c1(x)
@@ -18,7 +18,7 @@ class DoubleConvolution(layers.Layer):
 
 
 class DownConvolution(layers.Layer):
-    """  Layer that performs 2 convolutions and 1 MaxPool """
+    """  Layer that performs two convolutions and once Max Pooling """
 
     def __init__(self, output_filters, pooling=True, stride=2):
         super(DownConvolution, self).__init__()
@@ -36,7 +36,7 @@ class DownConvolution(layers.Layer):
 
 
 class UpConvolution(layers.Layer):
-    """  Layer that performs 2 convolutions and 1 UpConvolution """
+    """  Layer that performs two convolutions and one Up Convolution """
 
     def __init__(self, output_filters, stride=2):
         super(UpConvolution, self).__init__()
@@ -50,7 +50,6 @@ class UpConvolution(layers.Layer):
         from_down, from_up = inputs
         x = self.up_convolution(from_up)
         merged = tf.concat((from_down, x), axis=3)
-        # x = self.up_convolution(x)
         x = self.double_convolution(merged)
         return x
 
@@ -82,24 +81,20 @@ class UNet(keras.Model, BaseNetwork):
             self.up_convolutions.append(UpConvolution(output_filters=outs))
 
     def call(self, x, **kwargs):
-        encoder_outs = []
 
         # encoder pathway, save outputs for merging
+        encoder_outs = []
         for i, dc in enumerate(self.down_convolutions):
             x, before_pool = dc(x)
             encoder_outs.append(before_pool)
 
         x, _ = self.bottom_convolution(x)
-        # TODO tf concat down and up paths
 
+        # decoder pathway
         for i in reversed(range(self.depth)):
-
             before_pool = encoder_outs[i]
             uc = self.up_convolutions[i]
             x = uc([before_pool, x])
-            # merged = tf.concat((before_pool, x), axis=3, name='concat_{}'.format(i))
-            # uc = self.up_convolutions[i]
-            # x = uc(merged)
 
         x = self.final_convolution(x)
         return x

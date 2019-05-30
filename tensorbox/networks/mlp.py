@@ -2,17 +2,29 @@ import tensorflow as tf
 from tensorflow.python import layers, keras
 
 from tensorbox.networks.basenet import BaseNetwork
+from tensorbox.common.classes import DatasetWrapper
 
 
 class MLPNet(keras.Model, BaseNetwork):
-    def __init__(self, in_dim, out_dim, units=(64, 64), activation=tf.nn.relu):
+    def __init__(self,
+                 dataset=None,
+                 in_dim=None,
+                 out_dim=None,
+                 units=(64, 64),
+                 activation=tf.nn.relu,
+                 **kwargs):
+        assert isinstance(dataset, DatasetWrapper) or in_dim and out_dim, \
+            'Please provide a valid data set or define in_dim and out_dim.'
         keras.Model.__init__(self)
-        BaseNetwork.__init__(self, units=units, activation=activation)
-        # super(MLPNet, self).__init__(units=units, activation=activation)
-        self.in_dim = in_dim
-        self.out_dim = out_dim
+        BaseNetwork.__init__(self, units=units, activation=activation, **kwargs)
+        if dataset:
+            self.in_dim = dataset.x_shape
+            self.out_dim = dataset.y_shape
+        else:
+            self.in_dim = in_dim
+            self.out_dim = out_dim
 
-        hidden_units = list(units) + list(out_dim)
+        hidden_units = list(units) + list(self.out_dim)
         self.dense_layers = []
         for n, n_units in enumerate(hidden_units):
             layer = layers.Dense(units=n_units,

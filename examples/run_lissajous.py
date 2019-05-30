@@ -69,8 +69,7 @@ def main(args, **kwargs):
     units = (64, 64)
     dataset = get_dataset('lissajous')
 
-    net = MLPNet(in_dim=dataset.x_shape,
-                 out_dim=dataset.y_shape,
+    net = MLPNet(dataset,
                  activation=activation,
                  units=units)
     opt = tf.keras.optimizers.Adam(lr=1.0e-3)

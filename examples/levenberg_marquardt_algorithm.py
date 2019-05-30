@@ -16,7 +16,7 @@ tf.config.gpu.set_per_process_memory_growth(True)
 
 def main(args, dataset_name, units, activation, use_marquardt=True, **kwargs):
     dataset = get_dataset(dataset_name)
-    train_epochs = 16
+    train_epochs = 100
     lr = 1.0e-3
     log_dir = args.log_dir if args.log_dir else '/var/tmp/ga87zej'
     logger = CSVLogger(log_dir, total_steps=train_epochs, stdout=False)

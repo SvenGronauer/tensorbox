@@ -3,9 +3,10 @@ from abc import ABC, abstractmethod
 
 class BaseNetwork(ABC):
     """ Abstract base class that adds further functionality to tf.keras.Model """
-    def __init__(self, units, activation):
+    def __init__(self, units, activation, **kwargs):
         self.units = units
         self.activation = activation
+        self.kwargs = kwargs
 
     @abstractmethod
     def clone_net(self):
