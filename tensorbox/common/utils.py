@@ -26,16 +26,17 @@ def convert_to_string_only_dict(input_dict):
     return converted_dict
 
 
-def get_default_args(func_name='testing', 
+def get_default_args(func_name='testing',
+                     log_dir='/var/tmp/ga87zej/',
                      debug_level=0):
     """ create the default arguments for program execution
-    :param func_name: 
+    :param func_name:
+    :param log_dir:
     :param debug_level: 
     :return: 
     """
     if sys.version_info[0] < 3:
         raise Exception("Must be using Python 3")
-    default_path = '/var/tmp/ga87zej/'
 
     parser = argparse.ArgumentParser(description='This is the default parser.')
     parser.add_argument('--alg', default=os.cpu_count(), type=int,
@@ -48,12 +49,12 @@ def get_default_args(func_name='testing',
                         help='Default environment for RL algorithms')
     parser.add_argument('--func', dest='func', default=func_name,
                         help='Specify function name to be testing')
-    parser.add_argument('--log', dest='log_dir', default=default_path,
+    parser.add_argument('--log', dest='log_dir', default=log_dir,
                         help='Set the seed for random generator')
 
     args = parser.parse_args()
-    args.log_dir = os.path.join(default_path, args.func,
-                                datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S"))
+    args.log_dir = os.path.abspath(os.path.join(args.log_dir,
+                                                datetime.datetime.now().strftime("%Y_%m_%d__%H_%M_%S")))
     return args
 
 

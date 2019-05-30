@@ -84,7 +84,7 @@ class LissajousWrapper(BaseWrapper):
 
         self.X_train, self.Y_train = self._create_curve(self.T, allow_noise=True)
         self.X_val, self.Y_val = self._create_curve(self.T / 2, allow_noise=True)
-        self.X_test, self.Y_test = self._create_curve(self.T * 2, allow_noise=False)
+        self.X_test, self.Y_test = self._create_curve(self.T, allow_noise=False)
 
         self.Y_train_raw = None
         self.Y_val_raw = None

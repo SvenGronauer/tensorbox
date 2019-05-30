@@ -1,6 +1,4 @@
 import tensorflow as tf
-import numpy as np
-import time
 from tensorflow.python import keras
 
 """ tensorbox imports"""
@@ -10,67 +8,26 @@ from tensorbox.common import utils
 from tensorbox.common.logger import CSVLogger
 from tensorbox.common.classes import Configuration
 from tensorbox.methods import LevenbergMarquardt, GradientDescent
+from tensorbox.common.trainer import SupervisedTrainer
 
 # set this flag to fix cudNN bug on RTX graphics card
 tf.config.gpu.set_per_process_memory_growth(True)
 
 
-def build_jacobian(net, x):
-    with tf.GradientTape() as t:
-        t.watch(x)
-        y = net(x)
-    grads = t.gradient(y, x)
-    return grads
-
-
-def evaluate(test_set, net, debug=False):
-    losses = []
-    for n_batch, batch in enumerate(test_set):
-        data, label = batch
-        y = net(data, training=False)
-        mse = tf.reduce_mean(tf.square(y - label))
-        losses.append(mse.numpy())
-        if debug:
-            print('Labels')
-            print(label)
-    return float(np.mean(losses))
-
-
-def train_network(dataset, net, opt, method, epochs, logger=None):
-
-    loss_metric = keras.metrics.Mean(name='mean')
-    losses = []
-    for epoch in range(1, epochs+1):
-        losses = []
-        ts = time.time()
-        for n_batch, batch in enumerate(dataset.train):
-            updates, loss = method.get_updates_and_loss(batch, net)
-            loss_value = loss_metric(loss).numpy()
-            opt.apply_gradients(zip(updates, net.trainable_variables))
-            losses.append(loss_value)
-
-        if logger:
-            write_dic = dict(loss_train=utils.safe_mean(losses),
-                             loss_test=evaluate(dataset.test, net),
-                             time=time.time()-ts)
-            logger.write(write_dic, epoch)
-
-
 def main(args, dataset_name, units, activation, use_marquardt=True, **kwargs):
     dataset = get_dataset(dataset_name)
-    train_epochs = 200
-
-    base_dir = '/var/tmp/ga87zej'
-    log_dir = args.log_dir if args.log_dir else base_dir
+    train_epochs = 16
+    lr = 1.0e-3
+    log_dir = args.log_dir if args.log_dir else '/var/tmp/ga87zej'
     logger = CSVLogger(log_dir, total_steps=train_epochs, stdout=False)
     net = MLPNet(in_dim=dataset.x_shape,
                  out_dim=dataset.y_shape,
                  activation=activation,
                  units=units)
-    lr = 1.0e-3
     opt = tf.keras.optimizers.SGD(lr=lr) if use_marquardt else tf.keras.optimizers.Adam(lr=lr)
 
     loss_func = keras.losses.MeanSquaredError()
+    loss_metric = keras.metrics.Mean(name='mean')
 
     method = LevenbergMarquardt(loss_func) if use_marquardt else GradientDescent(loss_func)
 
@@ -78,14 +35,14 @@ def main(args, dataset_name, units, activation, use_marquardt=True, **kwargs):
                            opt=opt,
                            method=method,
                            dataset=dataset,
+                           logger=logger,
                            log_dir=log_dir)
     config.dump()
-    train_network(dataset,
-                  net,
-                  opt,
-                  method=method,
-                  epochs=train_epochs,
-                  logger=logger)
+    trainer = SupervisedTrainer(from_config=config,
+                                loss_func=loss_func,
+                                metric=loss_metric,
+                                dataset=dataset)
+    trainer.train(total_steps=train_epochs)
 
 
 def param_search():
@@ -101,17 +58,12 @@ def param_search():
                 for use_marquardt in modes:
                     for i in range(runs_per_setting):
                         args = utils.get_default_args()
-                        print('============================================================')
+                        print('=' * 80)
                         string = 'Data set: {}, Units: {}, Activation: {}, Marquardt? {}'
                         print(string.format(ds_name, units, activation, use_marquardt))
-
                         main(args, dataset_name=ds_name, units=units,
                              activation=activation, use_marquardt=use_marquardt)
 
 
 if __name__ == '__main__':
-    # args = utils.get_default_args()
-    # main(args)
     param_search()
-    # main(args=None)
-

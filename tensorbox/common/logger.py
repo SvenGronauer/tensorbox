@@ -91,7 +91,9 @@ class CSVLogger(LoggerBase):
             self.print_stdout(kvs, s)
         else:  # show progress bar in shell
             plot_progress(s, block_size=1, total_size=self.total_steps)
-            if step >= self.total_steps:
+            if step >= (self.total_steps-1):
+                # sys.stdout.flush()
+                sys.stdout.write('\x1b[2K')  # erases the plot progress line
                 sys.stdout.write('\n')
                 self.print_stdout(kvs, s)  # show finals values
         if step:
