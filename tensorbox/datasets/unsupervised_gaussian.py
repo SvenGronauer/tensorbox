@@ -48,7 +48,7 @@ def create_unsupervised_gaussian_dataset(batch_size=64, dim=2, normalize=True, *
     train_x, fake_y = get_arrays(dim=dim)
 
     ds = DatasetWrapper(x_train=train_x,
-                        y_train=fake_y,
+                        y_train=train_x,
                         x_test=None,
                         y_test=None,
                         batch_size=batch_size,

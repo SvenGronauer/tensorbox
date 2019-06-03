@@ -149,6 +149,62 @@ class SupervisedTrainer(Trainer):
         return self.loss_metric.result(), self.acc.result() * 100
 
 
+class UnsupervisedTrainer(Trainer):
+    def __init__(self,
+                 loss_func,
+                 metric,
+                 dataset,
+                 **kwargs):
+        super(UnsupervisedTrainer, self).__init__(**kwargs)
+
+        self.dataset = dataset
+        self.loss_func = loss_func
+        self.metric = metric
+
+        self.loss_metric = keras.metrics.Mean(name='test_loss')
+        self.acc = keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
+
+        self.restore()  # try to restore old checkpoints
+
+    def evaluate_test_set(self):
+        """ no test set to eval """
+        pass
+
+    def train(self, total_steps):
+        for step in range(total_steps):
+            batch_losses = []
+            time_start = time.time()
+            for i, batch in enumerate(self.dataset.train):
+                updates, loss = self.method.get_updates_and_loss(batch, self.net)
+                loss_value = self.metric(loss).numpy()
+                batch_losses.append(loss_value)
+                self.opt.apply_gradients(zip(updates, self.net.trainable_variables))
+
+            write_dic = dict(loss_train=utils.safe_mean(batch_losses),
+                             time=time.time() - time_start)
+            self.logger.write(write_dic, step)
+            if self.hooks:
+                [h.hook() for h in self.hooks]  # call all hooks
+
+        if self.hooks:
+            [h.final() for h in self.hooks]  # call all final hook methods
+
+    @tf.function
+    def train_step(self, batch):
+        image, label = batch
+        with tf.GradientTape() as tape:
+            predictions = self.net(image, training=True)
+            loss = self.loss_func(label, predictions)
+        gradients = tape.gradient(loss, self.net.trainable_variables)
+
+        self.opt.apply_gradients(zip(gradients, self.net.trainable_variables))
+
+        self.loss_metric(loss)
+        self.acc(label, predictions)
+
+        return self.loss_metric.result(), self.acc.result() * 100
+
+
 class ReinforcementTrainer(Trainer, ABC):
     def __init__(self,
                  net,
