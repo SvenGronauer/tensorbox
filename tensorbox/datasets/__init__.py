@@ -45,6 +45,12 @@ def get_tetris_dataset(train_val_split):
     return create_tetris_dataset(train_val_split)
 
 
+@register_dataset('unsupervised_gaussian')
+def get_unsupervised_gaussian_dataset(train_val_split):
+    from tensorbox.datasets.unsupervised_gaussian import create_unsupervised_gaussian_dataset
+    return create_unsupervised_gaussian_dataset(normalize=False)
+
+
 def get_dataset(dataset_name, train_val_split=0.8, debug_level=0):
     """
     Get dataset according to dataset name
