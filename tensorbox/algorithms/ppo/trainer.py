@@ -16,7 +16,7 @@ class PPOTrainer(ReinforcementTrainer):
         super(PPOTrainer, self).__init__(net=net,
                                          opt=opt,
                                          env=env,
-                                         log_path=log_path,
+                                         log_dir=log_path,
                                          debug_level=debug_level,
                                          **kwargs)
         self.behavior_net = net.clone_net()  # clones the network model, but weight values differ

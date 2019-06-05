@@ -1,11 +1,9 @@
 # Todo List
 
 * IMPALA
+* continuous action space for PPO
 
 
 # Done:
 
-### PPO
-* gae 
-### common
-* Vectorized environments - Multi-thread execution `(common/vecenv.py)
+* PPO

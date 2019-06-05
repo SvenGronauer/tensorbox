@@ -21,7 +21,7 @@ def create_lissajous_dataset(batch_size=64, normalize=True, **kwargs):
     :param kwargs:
     :return:
     """
-    lissa = LissajousWrapper(add_noise=False)
+    lissa = LissajousWrapper(T=1024)
 
     ds = DatasetWrapper(x_train=lissa.X_train,
                         y_train=lissa.Y_train,

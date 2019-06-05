@@ -108,7 +108,7 @@ class SupervisedTrainer(Trainer):
             data, label = batch
             y = self.net(data, training=False)
             loss = self.loss_func(label, y)
-            # mse = tf.reduce_mean(tf.square(y - label))
+            # mse = tf.reduce_mean(tf.reduce_sum(tf.square(y - label), axis=1)).numpy()
             losses.append(loss.numpy())
         return utils.safe_mean(losses)
 

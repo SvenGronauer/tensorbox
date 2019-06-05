@@ -113,19 +113,19 @@ class DatasetWrapper(object):
         """
         assert isinstance(mappings, tuple), 'mappings must be of type tuple (immutable)'
         self.train = tf.data.Dataset.from_tensor_slices((self.x_train, self.y_train))
-        if self.x_test and self.y_test:  # only if test set is provided
+        if self.x_test is not None and self.y_test is not None:  # only if test set is provided
             self.test = tf.data.Dataset.from_tensor_slices((self.x_test, self.y_test))
 
         for func in mappings:
             self.train = self.train.map(func)
-            if self.x_test and self.y_test:
+            if self.x_test is not None and self.y_test is not None:
                 self.test = self.test.map(func)
 
         if shuffle:
             self.train = self.train.shuffle(self.batch_size * 64)
         buffer_size = 16
         self.train = self.train.batch(self.batch_size).prefetch(buffer_size)
-        if self.x_test and self.y_test:
+        if self.x_test is not None and self.y_test is not None:
             self.test = self.test.batch(self.batch_size).prefetch(buffer_size)
 
     def get_config(self):
@@ -144,7 +144,7 @@ class DatasetWrapper(object):
         self.y_mean, self.y_std = du.get_mean_std(self.y_train)
         self.x_train = du.normalize(self.x_train, self.x_mean, self.x_std)
         self.y_train = du.normalize(self.y_train, self.y_mean, self.y_std)
-        if self.x_test and self.y_test:
+        if self.x_test is not None and self.y_test is not None:
             self.x_test = du.normalize(self.x_test, self.x_mean, self.x_std)
             self.y_test = du.normalize(self.y_test, self.y_mean, self.y_std)
         self.normalized = True
