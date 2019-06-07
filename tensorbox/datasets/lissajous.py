@@ -29,9 +29,11 @@ def create_lissajous_dataset(batch_size=64, normalize=True, **kwargs):
                         y_test=lissa.Y_test,
                         batch_size=batch_size,
                         wrapped_class=lissa,
+                        mappings=(du.type_cast_sp, ),
                         name='Lissajous')
     ds.normalize_data() if normalize else None
-    ds.build_tf_dataset(mappings=(du.type_cast_sp, ))
+    ds.normalize_labels() if normalize else None
+    ds.build_tf_dataset()
     return ds
 
 

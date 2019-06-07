@@ -12,6 +12,7 @@ def change_type(data, label):
     label = tf.cast(label, tf.float32)
     return data, label
 
+
 def get_arrays(dim, size=1024, null_space=2, rotation=-45.0, axis_scale=(2., 1.)):
     """
 
@@ -35,8 +36,8 @@ def get_arrays(dim, size=1024, null_space=2, rotation=-45.0, axis_scale=(2., 1.)
     array = np.matmul(np.random.normal(0.0, 1.0, (size, dim)) * scale, rotation_matrix)
     train_x[:, :dim] = array
 
-
     return train_x, fake_y
+
 
 def create_unsupervised_gaussian_dataset(batch_size=64, dim=2, normalize=True, **kwargs):
     """ create dataset and wrap with tf.data.Dataset()
@@ -53,9 +54,10 @@ def create_unsupervised_gaussian_dataset(batch_size=64, dim=2, normalize=True, *
                         y_test=None,
                         batch_size=batch_size,
                         wrapped_class=None,
+                        mappings=(du.type_cast_sp,),
                         name='Unsupervised Gaussian')
-    ds.normalize_data() if normalize else None
-    ds.build_tf_dataset(mappings=(du.type_cast_sp, ))
+    ds.normalize_data() if normalize else None  # do not normalize labels to see contractions
+    ds.build_tf_dataset()
     return ds
 
 

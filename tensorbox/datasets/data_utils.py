@@ -4,6 +4,7 @@ import requests
 import tensorbox.common.utils as utils
 import tensorflow as tf
 import numpy as np
+import functools
 
 
 def download_file(url, save_directory='/var/tmp/data'):
@@ -37,6 +38,15 @@ def convert_rgb_images_to_float(image, label):
     image = (image - 127.5) / 127.5
 
     return image, label
+
+
+def flatten_data(data, label, dt=tf.float32):
+    """ flattens the data values """
+    data = tf.cast(data, dt)
+    flatten_size = functools.reduce((lambda x, y: x * y), data.get_shape().as_list())
+    data = tf.reshape(data, (flatten_size, ))
+    label = tf.cast(label, dt)
+    return data, label
 
 
 def get_mean_std(array):

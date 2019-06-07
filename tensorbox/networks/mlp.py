@@ -21,8 +21,8 @@ class MLPNet(keras.Model, BaseNetwork):
             self.in_dim = dataset.x_shape
             self.out_dim = dataset.y_shape
         else:
-            self.in_dim = in_dim
-            self.out_dim = out_dim
+            self.in_dim = in_dim if isinstance(in_dim, tuple) else (in_dim, )
+            self.out_dim = out_dim if isinstance(out_dim, tuple) else (out_dim, )
 
         hidden_units = list(units) + list(self.out_dim)
         self.dense_layers = []

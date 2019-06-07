@@ -127,8 +127,9 @@ def create_tetris_dataset(train_val_split=0.8,
                         y_test=ground_truths[train_size:],
                         batch_size=batch_size,
                         wrapped_class=None,
+                        mappings=(du.type_cast_sp,),
                         name='Tetris-Segmentation')
     ds.normalize_data() if normalize else None
-    ds.build_tf_dataset(mappings=(du.type_cast_sp,))
+    ds.build_tf_dataset()
     return ds
 

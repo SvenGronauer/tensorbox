@@ -17,10 +17,12 @@ def create_boston_dataset(train_val_split=0.8, batch_size=32, normalize=True):
                         y_test=test_y,
                         batch_size=batch_size,
                         wrapped_class=None,
+                        mappings=(du.type_cast_sp, ),
                         name='Boston Housing')
-    if normalize:
-        ds.normalize_data()
-    ds.build_tf_dataset(mappings=(du.type_cast_sp, ))
+
+    ds.normalize_data() if normalize else None
+    ds.normalize_labels() if normalize else None
+    ds.build_tf_dataset()
     return ds
 
 
