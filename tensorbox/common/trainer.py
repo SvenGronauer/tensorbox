@@ -1,6 +1,6 @@
 import time
 from abc import ABC, abstractmethod
-
+import logging
 import tensorflow as tf
 from tensorflow.python import keras
 import tensorbox.common.utils as utils
@@ -17,9 +17,8 @@ class Trainer(ABC):
                  debug_level=None,
                  from_config=None,
                  hooks=None,
+                 *args,
                  **kwargs):
-
-        assert from_config or (net and opt), 'Provide values for initialization.'
 
         if from_config:
             self.config = from_config
@@ -38,17 +37,24 @@ class Trainer(ABC):
         self.training = False
         self.hooks = hooks
 
+        # check if all variables were defined
+        assert from_config or (net and opt), 'Provide values for initialization.'
+        assert self.log_dir, 'No log path was defined'
+        assert self.net, 'No argument parsed for net'
+        assert self.opt, 'No argument parsed for opt'
+        if logger is None:
+            logger = logging.getLogger(__name__)
+            logger.warning('There has been no logger defined')
+
+        self.args = args
+        self.kwargs = kwargs
+
         self.checkpoint = tf.train.Checkpoint(step=tf.Variable(1),
                                               optimizer=self.opt,
                                               net=self.net)
         self.manager = tf.train.CheckpointManager(self.checkpoint,
                                                   self.log_dir,
                                                   max_to_keep=5)
-
-        # check if all variables were defined
-        assert self.log_dir, 'No log path was defined'
-        assert self.net and self.opt and self.method and self.logger, \
-            'Not all params passed. Provide values for: net, opt, method, logger'
 
     def __call__(self, x, *args, **kwargs):
         return self.predict(x)
@@ -126,7 +132,8 @@ class SupervisedTrainer(Trainer):
             write_dic = dict(loss_train=utils.safe_mean(batch_losses),
                              loss_test=self.evaluate_test_set(),
                              time=time.time() - time_start)
-            self.logger.write(write_dic, step)
+            if self.logger:
+                self.logger.write(write_dic, step)
             if self.hooks:
                 [h.hook() for h in self.hooks]  # call all hooks
 
@@ -154,8 +161,9 @@ class UnsupervisedTrainer(Trainer):
                  loss_func,
                  metric,
                  dataset,
+                 *args,
                  **kwargs):
-        super(UnsupervisedTrainer, self).__init__(**kwargs)
+        super(UnsupervisedTrainer, self).__init__(*args, **kwargs)
 
         self.dataset = dataset
         self.loss_func = loss_func
@@ -182,7 +190,8 @@ class UnsupervisedTrainer(Trainer):
 
             write_dic = dict(loss_train=utils.safe_mean(batch_losses),
                              time=time.time() - time_start)
-            self.logger.write(write_dic, step)
+            if self.logger:
+                self.logger.write(write_dic, step)
             if self.hooks:
                 [h.hook() for h in self.hooks]  # call all hooks
 
@@ -207,11 +216,9 @@ class UnsupervisedTrainer(Trainer):
 
 class ReinforcementTrainer(Trainer, ABC):
     def __init__(self,
-                 net,
-                 opt,
                  env,
-                 log_dir,
-                 debug_level,
+                 *args,
                  **kwargs):
-        super(ReinforcementTrainer, self).__init__(net, opt, log_dir, debug_level, **kwargs)
+        super(ReinforcementTrainer, self).__init__(*args,
+                                                   **kwargs)
         self.env = env

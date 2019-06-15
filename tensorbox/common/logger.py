@@ -55,6 +55,9 @@ class ConsoleLogger(LoggerBase):
 
 
 class CSVLogger(LoggerBase):
+    """ source: OpenAI Baselines GitHub
+        https://github.com/openai/baselines
+    """
     def __init__(self,
                  log_dir,
                  total_steps,

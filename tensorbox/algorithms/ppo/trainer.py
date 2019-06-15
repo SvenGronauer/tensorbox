@@ -12,14 +12,12 @@ from tensorbox.common.classes import Trajectory
 
 
 class PPOTrainer(ReinforcementTrainer):
-    def __init__(self, net, opt, env, log_path, horizon=1024, debug_level=0, **kwargs):
-        super(PPOTrainer, self).__init__(net=net,
-                                         opt=opt,
-                                         env=env,
-                                         log_dir=log_path,
-                                         debug_level=debug_level,
+    def __init__(self, horizon=1024,
+                 *args,
+                 **kwargs):
+        super(PPOTrainer, self).__init__(*args,
                                          **kwargs)
-        self.behavior_net = net.clone_net()  # clones the network model, but weight values differ
+        self.behavior_net = self.net.clone_net()  # clones the network, but weights values differ
         self.horizon = horizon
         self.batch_size = 32
         self.dataset_buffer_size = self.batch_size * 8

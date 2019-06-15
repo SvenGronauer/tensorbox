@@ -55,7 +55,7 @@ def run(args):
     trainer = PPOTrainer(net=net,
                          opt=opt,
                          env=env,
-                         log_path='/var/tmp/delete_me')
+                         log_dir='/var/tmp/delete_me')
     # trainer.restore()
     trainer.train(epochs=150)
     trainer.save()
