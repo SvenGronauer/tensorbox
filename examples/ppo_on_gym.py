@@ -13,13 +13,15 @@ def evaluate(args):
     opt = tf.keras.optimizers.Adam()
 
     in_dim = env.observation_space.shape
-    out_dims = env.action_space.shape + (1,)  # create tuple for shared network
-    net = SharedMLPNet(in_dim=in_dim, out_dims=out_dims)
+    out_dims = (env.action_space.n, ) + (1, )  # create tuple for shared network
+    net = SharedMLPNet(in_dim=in_dim,
+                       out_dims=out_dims,
+                       activation=tf.nn.tanh)
 
     trainer = PPOTrainer(net=net,
                          opt=opt,
                          env=env,
-                         log_path='/var/tmp/delete_me')
+                         log_dir='/var/tmp/delete_me')
     trainer.restore()
 
     done = False
@@ -33,7 +35,7 @@ def evaluate(args):
         obs = np.expand_dims(obs, axis=0)
         # shaped_obs = obs.reshape(tuple([-1, ] + list(obs.shape)))
         ac_logits, val = trainer.net(obs)
-        action = policy.get_action(ac_logits)
+        action = int(np.squeeze(policy.get_action(ac_logits)))
         obs, rew, done, _ = env.step(action)
         print('action:', action)
         ret += rew
@@ -57,20 +59,21 @@ def run(args):
                          env=env,
                          log_dir='/var/tmp/delete_me')
     # trainer.restore()
-    trainer.train(epochs=150)
+    trainer.train(epochs=50)
     trainer.save()
     env.close()
 
 
 if __name__ == '__main__':
     args = utils.get_default_args()
-    args.env = 'RoboschoolReacher-v1'
-    args.env = 'RoboschoolHumanoid-v1'
-    args.env = 'CartPole-v1'
+    # args.env = 'RoboschoolReacher-v1'
+    # args.env = 'RoboschoolHumanoid-v1'
+    # args.env = 'CartPole-v1'
+    args.env = 'MyEasyPuckWorld-v0'
     # args.env = 'Pendulum-v0'
     # args.env = 'MountainCarContinuous-v0'
     print(args)
-    run(args)
-    # evaluate(args)
+    # run(args)
+    evaluate(args)
 
 

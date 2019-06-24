@@ -78,8 +78,15 @@ def make_env(env_name,
     :return:
     """
     import gym
-    import roboschool
     from gym import envs
+    try:  # try to import Martin's environments
+        from mygymenvs.environmentwrapper import get_data_wrapper
+    except ImportError:
+        print('WARNING: could not import mygymenvs!')
+    try:  # try to import roboschool environments
+        import roboschool
+    except ImportError:
+        print('WARNING: could not import roboschool!')
 
     if seed:
         tf.random.set_seed(seed)

@@ -28,10 +28,8 @@ class PPOTrainer(ReinforcementTrainer):
         self.clip_value = 0.2
         self.start_clip_value = 0.2
 
-        self.policy_distribution = get_probability_distribution(env.action_space)
-        # self.action_shape = env.get_action_shape()
-        self.action_shape = env.action_space.shape
-        # self.summary_writer = tf.summary.create_file_writer(self.log_path)
+        self.policy_distribution = get_probability_distribution(self.env.action_space)
+        self.action_shape = self.env.action_space.shape
         self.summary_writer = None
 
         self.latest_trajectory = None
@@ -210,7 +208,7 @@ class PPOTrainer(ReinforcementTrainer):
 
     def train(self, epochs):
         self.training = True
-        self.summary_writer = tf.summary.create_file_writer(self.log_path)
+        self.summary_writer = tf.summary.create_file_writer(self.log_dir)
         print('Start training for {} epochs'.format(epochs))
         for epoch in range(epochs):
             ts = time.time()

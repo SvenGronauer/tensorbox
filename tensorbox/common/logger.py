@@ -4,11 +4,13 @@ import time
 from abc import ABC, abstractmethod
 
 import numpy as np
+import logging
 
 
 class LoggerBase(ABC):
     def __init__(self, log_dir, file_name, stdout=True):
         self.log_dir = log_dir
+        self.logger = logging.getLogger(__name__)
         self.file_name = file_name
         os.makedirs(log_dir, exist_ok=True)
         self.stdout = stdout
@@ -17,6 +19,7 @@ class LoggerBase(ABC):
         self.keys = ['global_step']
         self.sep = ','
         self.step = 0
+        self.warning('There has been no logger defined')
     
     def close(self):
         if self.file:
@@ -36,6 +39,9 @@ class LoggerBase(ABC):
             else:
                 string += '\t {}: {}'.format(k, v)
         print(string)
+
+    def warning(self, msg):
+        self.logger.warning(msg)
 
     @abstractmethod
     def write(self, kvs, step):
