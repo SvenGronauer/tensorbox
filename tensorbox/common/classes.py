@@ -4,8 +4,9 @@ from collections import namedtuple
 from abc import ABC, abstractmethod
 import tensorflow as tf
 
-import tensorbox.common.utils as utils
+# import tensorbox.common.utils as utils
 import tensorbox.datasets.data_utils as du
+from tensorbox.common.utils import convert_to_string_only_dict
 
 Trajectory = namedtuple('Trajectory', ['observations',
                                        'actions',
@@ -59,7 +60,7 @@ class Configuration(object):
 
     def dump(self):
         """ Dumps the configuration to the disk at the specified log directory."""
-        str_dict = utils.convert_to_string_only_dict(self.as_dict())
+        str_dict = convert_to_string_only_dict(self.as_dict())
 
         file_name = os.path.join(self.log_dir, self.config_file_name)
         with open(file_name, 'w') as fp:
