@@ -9,7 +9,7 @@ class BaseNetwork(ABC):
         self.kwargs = kwargs
 
     @abstractmethod
-    def clone_net(self):
+    def clone_net_structure(self):
         """ creates a clone of the network model, but with different init values"""
         pass
 

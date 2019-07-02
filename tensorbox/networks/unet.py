@@ -98,3 +98,6 @@ class UNet(keras.Model, BaseNetwork):
 
         x = self.final_convolution(x)
         return x
+
+    def clone_net_structure(self):
+        raise NotImplementedError

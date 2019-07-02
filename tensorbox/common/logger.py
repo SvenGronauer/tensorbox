@@ -14,7 +14,6 @@ class LoggerBase(ABC):
         self.file_name = file_name
         os.makedirs(log_dir, exist_ok=True)
         self.stdout = stdout
-        # file_path = os.path.join(dir, 'summary.csv')
         self.file = None
         self.keys = ['global_step']
         self.sep = ','

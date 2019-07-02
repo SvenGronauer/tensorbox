@@ -2,12 +2,15 @@ import tensorflow as tf
 from tensorflow.python import keras
 import numpy as np
 import time
+from copy import deepcopy
 
 import tensorbox.common.utils as utils
+from tensorbox.networks import SharedMLPNet, MLPNet
 from tensorbox.common.trainer import ReinforcementTrainer
 from tensorbox.algorithms.ppo.gae import calculate_target_returns, \
     calculate_gae_advantages
-from tensorbox.common.probability_distributions import get_probability_distribution, GaussianDistribution
+from tensorbox.common.probability_distributions import get_probability_distribution, \
+    GaussianDistribution
 from tensorbox.common.classes import Trajectory
 
 
@@ -17,22 +20,36 @@ class PPOTrainer(ReinforcementTrainer):
                  **kwargs):
         super(PPOTrainer, self).__init__(*args,
                                          **kwargs)
-        self.behavior_net = self.net.clone_net()  # clones the network, but weights values differ
+        self.behavior_net = deepcopy(self.net)  # clones the network, but weights values differ
         self.horizon = horizon
-        self.batch_size = 32
+        self.batch_size = 256
         self.dataset_buffer_size = self.batch_size * 8
 
-        """ ppo parameters """
-        self.K = 2
+        # Info: parameter sharing means that the instance SharedMLPNet() is used to share weights
+        # between the policy and the value network
+        self.parameter_sharing = True
+        if not isinstance(self.net, SharedMLPNet):  # create a value network
+            self.value_net = MLPNet(in_dim=self.net.in_dim,
+                                    out_dim=1,
+                                    units=self.net.units,
+                                    activation=self.net.activation)
+            self.parameter_sharing = False
+            self.old_value_net = self.value_net.clone_net_structure()
+        self.value_opt = deepcopy(self.opt)
+
+        """ PPO parameters """
+        self.K = 4
         self.gamma = 0.99
         self.clip_value = 0.2
         self.start_clip_value = 0.2
 
         self.policy_distribution = get_probability_distribution(self.env.action_space)
         self.action_shape = self.env.action_space.shape
-        self.summary_writer = None
+        self.summary_writer = tf.summary.create_file_writer(self.log_dir)
+        print('Create TF event files at:', self.log_dir)
 
         self.latest_trajectory = None
+        self.time_start = time.time()
 
         self.value_loss_metric = keras.metrics.Mean(name='value_loss_metric')
         self.entropy_metric = keras.metrics.Mean(name='entropy_metric')
@@ -43,7 +60,7 @@ class PPOTrainer(ReinforcementTrainer):
         self.approximate_kl_divergence = keras.metrics.Mean(name='approximate_kl_divergence')
         self.clip_fraction = keras.metrics.Mean(name='clip_fraction')
 
-    def build_ppo_loss(self, batch, clip_value=0.2):
+    def build_ppo_loss(self, batch, clip_value=0.2, **kwargs):
         """ build the surrogate objective function according to Schulman et al. 2017
         :param batch: iterator over tf.data.Dataset()
         :param clip_value: float, bound for surrogate objective
@@ -51,12 +68,13 @@ class PPOTrainer(ReinforcementTrainer):
         """
         observations, actions, advantages, old_values, target_returns = batch
 
-        pi_logits, values = self.net(observations)
-        b_logits,  _ = self.behavior_net(observations)
-        # Note: BUG in TF2.0, must cast explicitly to float32
-        pi_logits = tf.cast(pi_logits, tf.float32)
-        b_logits = tf.cast(b_logits, tf.float32)
-        values = tf.cast(values, tf.float32)
+        if self.parameter_sharing:
+            pi_logits, values = self.net(observations)
+            b_logits,  _ = self.behavior_net(observations)
+        else:
+            pi_logits = self.net(observations)
+            values = self.value_net(observations)
+            b_logits = self.behavior_net(observations)
 
         neg_log_pi = self.policy_distribution.neg_log(actions, pi_logits)
         neg_log_b = self.policy_distribution.neg_log(actions, b_logits)
@@ -71,14 +89,15 @@ class PPOTrainer(ReinforcementTrainer):
 
         # clipped value loss
         values_clipped = old_values + tf.clip_by_value(values - old_values, - clip_value, clip_value)
-        value_loss_1 = tf.square(values - target_returns)
-        value_loss_2 = tf.square(values_clipped - target_returns)
+        value_loss_1 = tf.square(values - tf.stop_gradient(target_returns))
+        value_loss_2 = tf.square(values_clipped - tf.stop_gradient(target_returns))
         value_loss = 0.5 * tf.reduce_mean(tf.maximum(value_loss_1, value_loss_2))
-        # value_loss = 0.5 * tf.reduce_mean(value_loss_1)
+        # value_loss = 0.5 * tf.reduce_mean(value_loss_1)  #TODO clipped or un-clipped loss?
 
         entropy = self.policy_distribution.entropy(pi_logits, from_logits=True)
         entropy_loss = -0.01 * tf.reduce_mean(entropy)
         total_loss = policy_loss + value_loss + entropy_loss
+        policy_net_loss = policy_loss # + entropy_loss
 
         # feed metrics
         self.value_loss_metric(value_loss)
@@ -90,23 +109,30 @@ class PPOTrainer(ReinforcementTrainer):
         self.approximate_kl_divergence(0.5 * tf.reduce_mean(tf.square(neg_log_pi - neg_log_b)))
         self.clip_fraction(tf.cast(tf.greater(tf.abs(ratio - 1.0), clip_value), tf.float32))
 
-        return total_loss
+        return policy_net_loss, value_loss
 
-    def evaluate(self):
-        trajectory = self.get_trajectories()
-        print('mean reward =', utils.safe_mean(trajectory.rewards))
+    def copy_weights(self):
+        if self.parameter_sharing:
+            self.behavior_net.set_weights(self.net.get_weights())
+        else:
+            self.behavior_net.set_weights(self.net.get_weights())
+            self.old_value_net.set_weights(self.value_net.get_weights())
 
     def get_action_and_value(self, x):
         """ get actions and values w.r.t. behavior network as numpy arrays"""
-        action_logits, value = self.behavior_net(x)
-        action = self.policy_distribution.get_action(action_logits)
+        if self.parameter_sharing:
+            action_logits, value = self.behavior_net(x)
+        else:
+            action_logits = self.behavior_net(x)
+            value = self.old_value_net(x)
+        action = self.policy_distribution.get_sampled_action(action_logits)
         # return np.squeeze(action.numpy()), np.squeeze(value.numpy())
         return action, np.squeeze(value.numpy())
 
     def get_trajectories(self, dtype=np.float32):
         """ run behavior-policy roll-outs to obtain trajectories"""
         obs = self.env.reset()
-        ac = self.env.action_space.sample()
+        # ac = self.env.action_space.sample()
         num_env = obs.shape[0] if len(obs.shape) >= 2 else 1
         if isinstance(self.policy_distribution, GaussianDistribution):
             a_shape = (self.horizon, num_env) + self.env.get_action_shape()
@@ -143,17 +169,24 @@ class PPOTrainer(ReinforcementTrainer):
             count += tf.reduce_sum(ds)
             episode_return *= (1. - ds)
 
-        _, bootstrap_values = self.behavior_net(obs)
+        if self.parameter_sharing:
+            _, bootstrap_values = self.behavior_net(obs)
+        else:
+            bootstrap_values = self.old_value_net(obs)
         obs_t_plus_1[self.horizon] = obs
         values_t_plus_1[self.horizon] = np.squeeze(bootstrap_values)
 
-        a = np.squeeze((mean_episode_returns/count).numpy())
+        if count > 0:
+            ret = np.squeeze((mean_episode_returns / count).numpy())
+        else:  # # if horizons of trajectories are infinite
+            ret = (tf.reduce_sum(episode_return) / num_env).numpy()
+
         return Trajectory(observations=obs_t_plus_1,
                           actions=actions,
                           rewards=rewards,
                           dones=dones,
                           values=values_t_plus_1,
-                          mean_episode_return=a,
+                          mean_episode_return=ret,
                           horizon=self.horizon)
 
     def get_dataset(self, trajectory):
@@ -200,6 +233,16 @@ class PPOTrainer(ReinforcementTrainer):
             tf.summary.scalar('clip_fraction', self.clip_fraction.result(), step=t)
             tf.summary.scalar('mean policy ratio', self.mean_policy_ratio.result(), step=t)
             tf.summary.scalar('mean episode return', self.latest_trajectory.mean_episode_return, step=t)
+        if self.logger:
+            write_dic = dict(value_loss=self.value_loss_metric.result(),
+                             approximate_kl_divergence=self.approximate_kl_divergence.result(),
+                             mean_return=self.latest_trajectory.mean_episode_return,
+                             time=time.time() - self.time_start)
+            self.logger.write(write_dic, step)
+
+    def policy_evaluation(self):
+        trajectory = self.get_trajectories()
+        print('mean reward =', utils.safe_mean(trajectory.rewards))
 
     def restore(self):
         super(PPOTrainer, self).restore()  # restores only policy net
@@ -208,14 +251,14 @@ class PPOTrainer(ReinforcementTrainer):
 
     def train(self, epochs):
         self.training = True
-        self.summary_writer = tf.summary.create_file_writer(self.log_dir)
         print('Start training for {} epochs'.format(epochs))
         for epoch in range(epochs):
-            ts = time.time()
-            self.clip_value = self.start_clip_value * (1.0 - epoch/epochs)
+            self.time_start = time.time()
+            percentage_of_total = epoch/epochs
+            self.clip_value = self.start_clip_value * (1.0 - percentage_of_total)
             value_losses = []
             if epoch % self.K == 0:
-                self.behavior_net.set_weights(self.net.get_weights())
+                self.copy_weights()
             self.latest_trajectory = self.get_trajectories()
             ds = self.get_dataset(self.latest_trajectory)
             for n_batch, batch in enumerate(ds):
@@ -223,16 +266,21 @@ class PPOTrainer(ReinforcementTrainer):
                 value_losses.append(self.value_loss_metric.result())
             # print('Value loss=', utils.safe_mean(value_losses))
             # self.evaluate()
-            print('Episode {} \t episode return: {:0.3f} \t took: {:0.2f}s'.format(epoch,
-                self.latest_trajectory.mean_episode_return,
-                time.time() - ts))
+            # print('Episode {} \t episode return: {:0.3f} \t KL: {:0.3f} \t took: {:0.2f}s'.format(epoch,
+            #     self.latest_trajectory.mean_episode_return,
+            #     self.approximate_kl_divergence.result() * 1e3,
+            #     time.time() - self.time_start))
             self.logging(epoch)
+            self.policy_distribution.update(percentage_of_total)
         self.training = False
         self.behavior_net.set_weights(self.net.get_weights())  # copy weights
 
-    @tf.function
+    # @tf.function
     def train_step(self, batch, clip_value, **kwargs):
-        with tf.GradientTape() as tape:
-            loss = self.build_ppo_loss(batch, clip_value=clip_value)
-        gradients = tape.gradient(loss, self.net.trainable_variables)
-        self.opt.apply_gradients(zip(gradients, self.net.trainable_variables))
+        with tf.GradientTape(persistent=True) as tape:
+            policy_loss, value_loss = self.build_ppo_loss(batch, clip_value=clip_value, **kwargs)
+        policy_gradients = tape.gradient(policy_loss, self.net.trainable_variables)
+        value_gradients = tape.gradient(value_loss, self.value_net.trainable_variables)
+        self.opt.apply_gradients(zip(policy_gradients, self.net.trainable_variables))
+        self.value_opt.apply_gradients(zip(value_gradients, self.value_net.trainable_variables))
+        del tape

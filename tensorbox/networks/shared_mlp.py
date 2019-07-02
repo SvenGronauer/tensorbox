@@ -44,7 +44,7 @@ class SharedMLPNet(keras.Model, BaseNetwork):
             outputs.append(head(x))
         return outputs
 
-    def clone_net(self):
+    def clone_net_structure(self):
         """ creates a clone of the network model, but with different init values"""
         return SharedMLPNet(self.in_dim,
                             self.out_dims,

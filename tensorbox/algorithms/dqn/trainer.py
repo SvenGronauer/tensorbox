@@ -137,8 +137,8 @@ class DQNTrainer(ReinforcementTrainer):
                 gradients_d = tape.gradient(loss_d, self.net.trainable_variables)
                 del tape
 
-                delta = 0.95
-                delta = epoch / (epochs - 1)
+                delta = 0.05
+                # delta = epoch / (epochs - 1)
                 # weighted_grads = gradients_a + delta * gradients_b
 
                 weighted_grads = [g[0] + delta * g[1] for g in zip(gradients_a, gradients_b)]

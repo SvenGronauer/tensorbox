@@ -31,15 +31,14 @@ def calculate_target_returns(trajectory, gamma):
     """
     Calculate the discounted sum of rewards to train the value function as baseline
 
-    :param trajectory:
-    :param gamma:
-    :return:
+    :param trajectory: Trajectory object, holding information about sampled data
+    :param gamma: float, discount factor
+    :return: np.array holding target returns
     """
     dones = trajectory.dones
     rewards = trajectory.rewards
 
-    R_t = (1. - dones[-1]) * trajectory.values[-1] + dones[-1]
-
+    R_t = (1. - dones[-1]) * trajectory.values[-1]
     horizon, num_envs = trajectory.dones.shape
     target_returns = np.zeros((horizon, num_envs), dtype=np.float32)
 

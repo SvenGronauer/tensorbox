@@ -39,7 +39,7 @@ class MLPNet(keras.Model, BaseNetwork):
             x = layer(x)
         return x
 
-    def clone_net(self):
+    def clone_net_structure(self):
         """ creates a clone of the network model, but with different init values"""
         return MLPNet(in_dim=self.in_dim,
                       out_dim=self.out_dim,

@@ -66,6 +66,12 @@ class Trainer(ABC):
         """
         return self.net(x)
 
+    def print_params(self):
+        print('<', '=' * 20, '>')
+        print('log_dir:', self.log_dir)
+        print('Network:', self.net)
+        print('<', '=' * 20, '>')
+
     def restore(self):
         """
         restore model from path
@@ -222,3 +228,8 @@ class ReinforcementTrainer(Trainer, ABC):
         super(ReinforcementTrainer, self).__init__(*args,
                                                    **kwargs)
         self.env = env
+        self.print_params()
+
+    def print_params(self):
+        super(ReinforcementTrainer, self).print_params()
+        print('env:', self.env)
