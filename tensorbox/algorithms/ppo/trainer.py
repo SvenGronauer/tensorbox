@@ -21,9 +21,6 @@ class PPOTrainer(ReinforcementTrainer):
         super(PPOTrainer, self).__init__(*args,
                                          **kwargs)
         self.behavior_net = deepcopy(self.net)  # clones the network, but weights values differ
-        self.horizon = horizon
-        self.batch_size = 256
-        self.dataset_buffer_size = self.batch_size * 8
 
         # Info: parameter sharing means that the instance SharedMLPNet() is used to share weights
         # between the policy and the value network
@@ -38,10 +35,13 @@ class PPOTrainer(ReinforcementTrainer):
         self.value_opt = deepcopy(self.opt)
 
         """ PPO parameters """
-        self.K = 4
+        self.K = 30
         self.gamma = 0.99
+        self.horizon = 512
+        self.batch_size = 1024
         self.clip_value = 0.2
         self.start_clip_value = 0.2
+        self.dataset_buffer_size = self.batch_size * 8
 
         self.policy_distribution = get_probability_distribution(self.env.action_space)
         self.action_shape = self.env.action_space.shape

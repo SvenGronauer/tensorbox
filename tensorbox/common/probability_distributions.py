@@ -26,6 +26,9 @@ class ProbabilityDistribution(ABC):
     def get_action(self, p):
         pass
 
+    def log_prob(self, action, p):
+        return -self.neg_log(action, p)
+
     @abstractmethod
     def neg_log(self, action, p):
         pass
@@ -63,6 +66,17 @@ class GaussianDistribution(ProbabilityDistribution):
     def get_sampled_action(self, p_as_logits):
         ac = self.sample(p_as_logits)
         return np.clip(ac.numpy(), -self.range, self.range)
+
+    def kl_divergence(self, p_as_logits, q_as_logits):
+        assert p_as_logits.shape == q_as_logits.shape, 'shapes do not match'
+        ln = np.log
+        p = self.activation(p_as_logits)
+        q = self.activation(q_as_logits)
+        # return tf.reduce_sum(ln(q.std) - ln(self.std) + (
+        #         tf.square(self.std) + tf.square(self.mean - q.mean)) / (
+        #                              2.0 * tf.square(q.std)) - 0.5, axis=-1)
+        return tf.reduce_sum((tf.square(self.std) + tf.square(p - q)) / ( 2.0 * tf.square(self.std)) - 0.5,
+                             axis=-1)
 
     def neg_log(self, actions, mean_as_logits, **kwargs):
         """ calculate -ln(p(.))
