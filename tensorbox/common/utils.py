@@ -82,7 +82,7 @@ def make_env(env_name,
     try:  # try to import Martin's environments
         from mygymenvs.environmentwrapper import get_data_wrapper
     except ImportError:
-        print('WARNING: could not import mygymenvs!')
+        print('WARNING: could not import mygymenvs! Hint: Did you install the progressbar package?')
     try:  # try to import roboschool environments
         import roboschool
     except ImportError:

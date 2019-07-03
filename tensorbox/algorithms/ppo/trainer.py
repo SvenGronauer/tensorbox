@@ -20,7 +20,8 @@ class PPOTrainer(ReinforcementTrainer):
                  **kwargs):
         super(PPOTrainer, self).__init__(*args,
                                          **kwargs)
-        self.behavior_net = deepcopy(self.net)  # clones the network, but weights values differ
+        # clones only the network structure, the weights still differ!
+        self.behavior_net = self.net.clone_net_structure()
 
         # Info: parameter sharing means that the instance SharedMLPNet() is used to share weights
         # between the policy and the value network
@@ -35,13 +36,13 @@ class PPOTrainer(ReinforcementTrainer):
         self.value_opt = deepcopy(self.opt)
 
         """ PPO parameters """
-        self.K = 30
+        self.K = 15
         self.gamma = 0.99
-        self.horizon = 512
-        self.batch_size = 1024
+        self.horizon = horizon
+        self.batch_size = 512
         self.clip_value = 0.2
         self.start_clip_value = 0.2
-        self.dataset_buffer_size = self.batch_size * 8
+        self.dataset_buffer_size = self.batch_size * 4
 
         self.policy_distribution = get_probability_distribution(self.env.action_space)
         self.action_shape = self.env.action_space.shape
@@ -92,12 +93,11 @@ class PPOTrainer(ReinforcementTrainer):
         value_loss_1 = tf.square(values - tf.stop_gradient(target_returns))
         value_loss_2 = tf.square(values_clipped - tf.stop_gradient(target_returns))
         value_loss = 0.5 * tf.reduce_mean(tf.maximum(value_loss_1, value_loss_2))
-        # value_loss = 0.5 * tf.reduce_mean(value_loss_1)  #TODO clipped or un-clipped loss?
 
         entropy = self.policy_distribution.entropy(pi_logits, from_logits=True)
         entropy_loss = -0.01 * tf.reduce_mean(entropy)
         total_loss = policy_loss + value_loss + entropy_loss
-        policy_net_loss = policy_loss # + entropy_loss
+        policy_net_loss = policy_loss  # + entropy_loss
 
         # feed metrics
         self.value_loss_metric(value_loss)
@@ -118,14 +118,14 @@ class PPOTrainer(ReinforcementTrainer):
             self.behavior_net.set_weights(self.net.get_weights())
             self.old_value_net.set_weights(self.value_net.get_weights())
 
-    def get_action_and_value(self, x):
+    def sample_action_and_value(self, x):
         """ get actions and values w.r.t. behavior network as numpy arrays"""
         if self.parameter_sharing:
             action_logits, value = self.behavior_net(x)
         else:
             action_logits = self.behavior_net(x)
             value = self.old_value_net(x)
-        action = self.policy_distribution.get_sampled_action(action_logits)
+        action = self.policy_distribution.sample(action_logits, as_np_array=True)
         # return np.squeeze(action.numpy()), np.squeeze(value.numpy())
         return action, np.squeeze(value.numpy())
 
@@ -152,7 +152,7 @@ class PPOTrainer(ReinforcementTrainer):
             # acs, val = self.behavior_net(obs)
             if len(obs.shape) == 1:
                 obs = obs.reshape((-1, obs.shape[0]))
-            acs, val = self.get_action_and_value(obs)
+            acs, val = self.sample_action_and_value(obs)
             new_obs, r, ds, _ = self.env.step(actions=acs)
             ds = tf.cast(ds, tf.float32)
             i = t % self.horizon
@@ -259,6 +259,7 @@ class PPOTrainer(ReinforcementTrainer):
             value_losses = []
             if epoch % self.K == 0:
                 self.copy_weights()
+                self.policy_distribution.update(percentage_of_total)
             self.latest_trajectory = self.get_trajectories()
             ds = self.get_dataset(self.latest_trajectory)
             for n_batch, batch in enumerate(ds):
@@ -271,7 +272,6 @@ class PPOTrainer(ReinforcementTrainer):
             #     self.approximate_kl_divergence.result() * 1e3,
             #     time.time() - self.time_start))
             self.logging(epoch)
-            self.policy_distribution.update(percentage_of_total)
         self.training = False
         self.behavior_net.set_weights(self.net.get_weights())  # copy weights
 
