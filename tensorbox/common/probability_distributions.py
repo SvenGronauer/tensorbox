@@ -10,7 +10,7 @@ def get_probability_distribution(space):
     if isinstance(space, gym.spaces.Discrete):
         return CategoricalDistribution(num_classes=space.n)
     elif isinstance(space, gym.spaces.Box):
-        return GaussianDistribution(shape=space.shape, std=0.5)
+        return GaussianDistribution(shape=space.shape, std=0.1)
     else:
         raise NotImplementedError
 
@@ -23,11 +23,12 @@ class ProbabilityDistribution(ABC):
     def entropy(self, p, from_logits=False):
         pass
 
-    def get_action(self, p):
-        pass
-
     def log_prob(self, action, p):
         return -self.neg_log(action, p)
+
+    @abstractmethod
+    def mode(self, logits):
+        pass
 
     @abstractmethod
     def neg_log(self, action, p):
@@ -68,6 +69,9 @@ class GaussianDistribution(ProbabilityDistribution):
         return tf.reduce_sum((tf.square(self.std) + tf.square(p - q)) / (2.0 * tf.square(self.std)) - 0.5,
                              axis=-1)
 
+    def mode(self, logits, as_numpy=False):
+        return np.squeeze(logits.numpy()) if as_numpy else logits
+
     def neg_log(self, actions, mean_as_logits, **kwargs):
         """ calculate -ln(p(.))
         :param actions: actions of behavior policy in [-1, 1.]
@@ -81,16 +85,16 @@ class GaussianDistribution(ProbabilityDistribution):
         res = 0.5 * p + 0.5 * self.dim * ln(2*np.pi) + ln(self.std) * self.dim
         return res
 
-    def sample(self, logits, as_np_array=False):
+    def sample(self, logits, as_numpy=False):
         """ sample from gaussian distribution according to self.std and mean
         :param logits: tf.Tensor
-        :param as_np_array: bool, if True returns np.array as result
+        :param as_numpy: bool, if True returns np.array as result
         :return: tf.Tensor or np.array
         """
         ac = tf.random.normal(shape=logits.shape,
                               mean=logits,
                               stddev=self.std)
-        if as_np_array:
+        if as_numpy:
             ac = ac.numpy()
         return ac
 
@@ -124,9 +128,9 @@ class CategoricalDistribution(ProbabilityDistribution):
         """ implemented with sparse idx and p must be logits"""
         return self.sparse_neg_log(action, p, from_logits=True, axis=-1)
 
-    def sample(self, logits, as_np_array=False):
+    def sample(self, logits, as_numpy=False):
         ac = tf.random.categorical(logits, 1)
-        if as_np_array:
+        if as_numpy:
             ac = np.squeeze(ac.numpy()).flatten()
         return ac
 

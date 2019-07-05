@@ -87,6 +87,11 @@ def make_env(env_name,
         import roboschool
     except ImportError:
         print('WARNING: could not import roboschool!')
+    try:
+        import pybullet_envs
+        import pybulletgym.envs
+    except ImportError:
+        print('WARNING: could not import pybullet_envs!')
 
     if seed:
         tf.random.set_seed(seed)
