@@ -12,6 +12,7 @@ class Trainer(ABC):
                  net=None,
                  opt=None,
                  method=None,
+                 mode=None,
                  logger=None,
                  log_dir=None,
                  debug_level=None,
@@ -25,12 +26,14 @@ class Trainer(ABC):
             self.net = from_config.net
             self.opt = from_config.opt
             self.method = from_config.method
+            self.mode = from_config.mode
             self.logger = from_config.logger
             self.log_dir = from_config.log_dir
         else:
             self.net = net
             self.opt = opt
             self.method = method
+            self.mode = mode
             self.logger = logger
             self.log_dir = log_dir
         self.debug_level = debug_level
@@ -78,7 +81,9 @@ class Trainer(ABC):
         :return: bool, true if restore is successful
         """
         restore_successful = False
-        self.checkpoint.restore(self.manager.latest_checkpoint)
+
+        self.checkpoint.restore(self.manager.latest_checkpoint) # .expect_partial()
+
         if self.manager.latest_checkpoint:
             print("Restored from {}".format(self.manager.latest_checkpoint))
             restore_successful = True
@@ -87,10 +92,13 @@ class Trainer(ABC):
         return restore_successful
 
     def save(self):
-        utils.mkdir(self.log_dir)
-        self.checkpoint.step.assign_add(1)
-        save_path = self.manager.save()
-        print("Saved checkpoint for step {}: {}".format(int(self.checkpoint.step), save_path))
+        if self.training:
+            utils.mkdir(self.log_dir)
+            self.checkpoint.step.assign_add(1)
+            save_path = self.manager.save()
+            print("Saved checkpoint for step {}: {}".format(int(self.checkpoint.step), save_path))
+        else:
+            raise ValueError('Save method is not available, switch to mode = `train`')
 
     @abstractmethod
     def train(self, total_steps):

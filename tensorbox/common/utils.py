@@ -26,12 +26,17 @@ def convert_to_string_only_dict(input_dict):
     return converted_dict
 
 
-def get_default_args(func_name='testing',
+def get_default_args(debug_level=0,
+                     env='CartPole-v0',
+                     func_name='testing',
                      log_dir='/var/tmp/ga87zej/',
-                     debug_level=0):
+                     threads=os.cpu_count()
+                     ):
     """ create the default arguments for program execution
+    :param threads: int, number of available threads
+    :param env: str, name of RL environment
     :param func_name:
-    :param log_dir:
+    :param log_dir: str, path to directory where logging files are going to be created
     :param debug_level: 
     :return: 
     """
@@ -40,12 +45,12 @@ def get_default_args(func_name='testing',
 
     parser = argparse.ArgumentParser(description='This is the default parser.')
     parser.add_argument('--alg', default=os.cpu_count(), type=int,
-                        help='Number of available CPU cores.')
-    parser.add_argument('--cores', default=os.cpu_count(), type=int,
-                        help='Number of available CPU cores.')
+                        help='Algorithm to use (in case of a RL problem. (default: PPO)')
+    parser.add_argument('--threads', default=threads, type=int,
+                        help='Number of available Threads on CPU.')
     parser.add_argument('--debug', default=debug_level, type=int,
                         help='Debug level (0=None, 1=Low debug prints 2=all debug prints).')
-    parser.add_argument('--env', default='CartPole-v0', type=str,
+    parser.add_argument('--env', default=env, type=str,
                         help='Default environment for RL algorithms')
     parser.add_argument('--func', dest='func', default=func_name,
                         help='Specify function name to be testing')

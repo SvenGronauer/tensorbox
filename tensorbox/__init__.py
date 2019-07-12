@@ -9,3 +9,7 @@ register(
     max_episode_steps=512,
 )
 
+register(
+    id='ClosedLoop-v0',
+    entry_point='tensorbox.envs.closed_loop_system:ClosedLoopSystemEnv'
+)

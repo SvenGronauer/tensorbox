@@ -14,7 +14,8 @@ class SawtoothWaveEnv(gym.Env):
         self.delta_steps = 128
         self.magnitude = 1.
         self.signal_slope = 2. * self.magnitude / self.delta_steps
-        self.y = 0.  # output
+        self.y = 0.  # output value
+        self.w = 0.  # reference value
         self.error = 0.
 
         self.pid = PIDController(k_p=0.7)
@@ -59,8 +60,8 @@ class SawtoothWaveEnv(gym.Env):
         new_params = action
         self.pid.set_from_policy_mean(new_params)
 
-        w = self.get_w_value()
-        self.error = w - self.y
+        self.w = self.get_w_value()
+        self.error = self.w - self.y
         u = self.pid(self.error)
         self.y += self.plant_dynamics(u)
 
@@ -84,10 +85,12 @@ if __name__ == '__main__':
     x = env.reset()
     done = False
     ret = 0.
-    while not done:
+    i = 0
+    while not done and i < 1024:
         action = np.array([0., 0, 0])
         x, reward, done, _ = env.step(action)
         ret += reward
+        i += 1
     print('Return:', ret)
 
     print('Plot jump')
@@ -105,3 +108,5 @@ if __name__ == '__main__':
     plt.figure()
     plt.plot(ts, ys, 'b-')
     plt.show()
+    env.close()
+

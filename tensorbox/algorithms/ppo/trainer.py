@@ -265,7 +265,7 @@ class PPOTrainer(ReinforcementTrainer):
                 self.train_step(batch, self.clip_value)
                 value_losses.append(self.value_loss_metric.result())
             self.logging(epoch)
-        self.training = False
+        # self.training = False
         self.behavior_net.set_weights(self.net.get_weights())  # copy weights
 
     # @tf.function

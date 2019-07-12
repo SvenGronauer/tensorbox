@@ -10,7 +10,7 @@ np.set_printoptions(precision=4)
 
 
 class LoggerBase(ABC):
-    def __init__(self, log_dir, file_name, stdout=True):
+    def __init__(self, log_dir, file_name, stdout=True, *args, **kwargs):
         self.log_dir = log_dir
         self.logger = logging.getLogger(__name__)
         self.file_name = file_name
@@ -71,8 +71,9 @@ class CSVLogger(LoggerBase):
     def __init__(self,
                  log_dir,
                  file_name='summary.csv',
+                 *args,
                  **kwargs):
-        super(CSVLogger, self).__init__(log_dir, file_name, **kwargs)
+        super(CSVLogger, self).__init__(log_dir, file_name, *args, **kwargs)
         file_path = os.path.join(self.log_dir, file_name)
         self.file = open(file_path, 'w+t')
 
@@ -115,8 +116,8 @@ class CSVLogger(LoggerBase):
 
 
 class TensorBoardLogger(LoggerBase):
-    def __init__(self, log_dir):
-        super(TensorBoardLogger, self).__init__(log_dir, file_name='TensorBoardLogger', stdout=True)
+    def __init__(self, log_dir, *args, **kwargs):
+        super(TensorBoardLogger, self).__init__(log_dir, file_name='TensorBoardLogger', *args, **kwargs)
         self.writer = tf.summary.create_file_writer(self.log_dir)
         print('[TensorBoardLogger] Create TF event files at:', self.log_dir)
 
@@ -140,7 +141,7 @@ class CombinedLogger(LoggerBase):
         self.loggers = []
         for logger in loggers:
             if logger in CombinedLogger.available_loggers:
-                instance = CombinedLogger.available_loggers[logger](log_dir)
+                instance = CombinedLogger.available_loggers[logger](log_dir=log_dir, stdout=False)
                 self.loggers.append(instance)
         print('Number of loggers:', len(self.loggers), 'Names:', loggers)
         super(CombinedLogger, self).__init__(log_dir, file_name='CombinedLogger', stdout=True)

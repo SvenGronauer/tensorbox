@@ -36,6 +36,7 @@ class Configuration(object):
                  net,
                  opt,
                  method,
+                 mode,
                  dataset,
                  logger,
                  log_dir,
@@ -44,6 +45,7 @@ class Configuration(object):
         self.net = net
         self.opt = opt
         self.method = method
+        self.mode = mode
         self.dataset = dataset
         self.logger = logger
         self.log_dir = log_dir
