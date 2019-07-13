@@ -10,6 +10,11 @@ register(
 )
 
 register(
-    id='ClosedLoop-v0',
-    entry_point='tensorbox.envs.closed_loop_system:ClosedLoopSystemEnv'
+    id='PT1System-v0',
+    entry_point='tensorbox.envs.control_systems:PT1SystemEnv'
+)
+
+register(
+    id='PT2System-v0',
+    entry_point='tensorbox.envs.control_systems:PT2SystemEnv'
 )
