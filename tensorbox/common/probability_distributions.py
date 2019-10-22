@@ -49,7 +49,7 @@ class GaussianDistribution(ProbabilityDistribution):
         super(GaussianDistribution, self).__init__()
         self.shape = shape
         self.std_max = 0.5
-        self.std_min = 0.15
+        self.std_min = 0.1
         self.std = std
         self.dim = shape[0]  # number of dimension in action space
 

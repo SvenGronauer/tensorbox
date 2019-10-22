@@ -50,7 +50,7 @@ class PPOTrainer(ReinforcementTrainer):
             self.summary_writer = tf.summary.create_file_writer(self.log_dir)
             print('Create TF event files at:', self.log_dir)
 
-        self.latest_trajectory = None
+        self.latest_train_trajectory = None
         self.time_start = time.time()
 
         self.value_loss_metric = keras.metrics.Mean(name='value_loss_metric')
@@ -129,7 +129,17 @@ class PPOTrainer(ReinforcementTrainer):
         action = self.policy_distribution.sample(action_logits, as_numpy=True)
         # return np.squeeze(action.numpy()), np.squeeze(value.numpy())
         return action, np.squeeze(value.numpy())
-
+    
+    def get_action_and_value(self, x):
+        if self.parameter_sharing:
+            action_logits, value = self.behavior_net(x)
+        else:
+            action_logits = self.behavior_net(x)
+            value = self.old_value_net(x)
+        action = self.policy_distribution.mode(action_logits, as_numpy=True)
+        # return np.squeeze(action.numpy()), np.squeeze(value.numpy())
+        return action, np.squeeze(value.numpy())
+    
     def get_trajectories(self, dtype=np.float32):
         """ run behavior-policy roll-outs to obtain trajectories"""
         obs = self.env.reset()
@@ -153,7 +163,10 @@ class PPOTrainer(ReinforcementTrainer):
             # acs, val = self.behavior_net(obs)
             if len(obs.shape) == 1:
                 obs = obs.reshape((-1, obs.shape[0]))
-            acs, val = self.sample_action_and_value(obs)
+            if self.training:  # sample from distribution during training
+                acs, val = self.sample_action_and_value(obs)
+            else:
+                acs, val = self.sample_action_and_value(obs)
             new_obs, r, ds, _ = self.env.step(actions=acs)
             ds = tf.cast(ds, tf.float32)
             i = t % self.horizon
@@ -225,10 +238,15 @@ class PPOTrainer(ReinforcementTrainer):
         if not self.training:
             return
 
+        self.training = False
+        evaluation_returns = self.policy_evaluation()
+        self.training = True
+        
         if self.logger:
             write_dic = {'value_loss': self.value_loss_metric.result().numpy(),
                          'Approx KL Divergence': self.approximate_kl_divergence.result().numpy(),
-                         'Mean Return': self.latest_trajectory.mean_episode_return,
+                         'Training Return': self.latest_train_trajectory.mean_episode_return,
+                         'Evaluation Return': evaluation_returns,
                          'clip Value': self.clip_value,
                          'Entropy': self.entropy_metric.result().numpy(),
                          'total_loss_metric': self.total_loss_metric.result().numpy(),
@@ -240,8 +258,11 @@ class PPOTrainer(ReinforcementTrainer):
             self.logger.write(write_dic, step)
 
     def policy_evaluation(self):
+        self.training = False
         trajectory = self.get_trajectories()
-        print('mean reward =', utils.safe_mean(trajectory.rewards))
+        # print('mean reward =', trajectory.mean_episode_return)
+        self.training = True
+        return trajectory.mean_episode_return
 
     def restore(self):
         super(PPOTrainer, self).restore()  # restores only policy net
@@ -259,8 +280,8 @@ class PPOTrainer(ReinforcementTrainer):
             if epoch % self.K == 0:
                 self.copy_weights()
                 self.policy_distribution.update(percentage_of_total)
-            self.latest_trajectory = self.get_trajectories()
-            ds = self.get_dataset(self.latest_trajectory)
+            self.latest_train_trajectory = self.get_trajectories()
+            ds = self.get_dataset(self.latest_train_trajectory)
             for n_batch, batch in enumerate(ds):
                 self.train_step(batch, self.clip_value)
                 value_losses.append(self.value_loss_metric.result())
